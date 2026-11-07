@@ -1,0 +1,63 @@
+/* ---------- static content pages (footer Support) ---------- */
+/* the 44px top padding matches .pagehead/.shop__head, so the breadcrumb keeps the
+   same breathing room under the header as every other page. Longhands only: a
+   padding shorthand here would also wipe .container's horizontal padding. */
+.doc{padding-top:44px;padding-bottom:76px}
+
+.doc__title{
+  font-size:42px;line-height:1.02;font-weight:800;letter-spacing:-.035em;
+  color:#191712;margin:0 0 30px;
+}
+
+.doc__card{
+  max-width:880px;
+  background:linear-gradient(180deg,#fffdf9 0%,#faf7f1 100%);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:0 1px 2px rgba(23,22,20,.04);
+  padding:46px 50px 44px;
+}
+
+.doc__head{
+  font-size:25px;line-height:1.18;font-weight:800;letter-spacing:-.026em;
+  color:#191712;margin:0 0 22px;
+}
+
+.doc__sec{
+  font-size:18px;line-height:1.3;font-weight:700;letter-spacing:-.014em;
+  color:#191712;margin:30px 0 12px;
+}
+
+.doc__card p{
+  font-size:14.5px;line-height:1.68;color:#3b3833;
+  max-width:700px;margin:0 0 14px;
+}
+
+.doc__card p strong,.doc__card li strong{color:#191712;font-weight:700}
+
+.doc__card .doc__sec + p{margin-top:0}
+
+.doc__card ul{list-style:disc;padding-left:22px;margin:0 0 16px;max-width:700px}
+.doc__card li{font-size:14.5px;line-height:1.62;color:#3b3833;margin-bottom:9px}
+.doc__card li::marker{color:var(--muted-2)}
+
+.doc__lines{white-space:normal}
+
+.doc__card a{color:#191712;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.doc__card a:hover{text-decoration-color:#191712}
+
+@media (max-width:900px){
+  .doc__title{font-size:34px}
+  .doc__card{padding:32px 28px 30px;border-radius:18px}
+  .doc__head{font-size:21px}
+  .doc__sec{font-size:16.5px;margin-top:24px}
+}
+
+@media (max-width:520px){
+  .doc{padding-bottom:52px}
+  .doc__title{font-size:29px;margin-bottom:22px}
+  .doc__card{padding:24px 18px 22px;border-radius:15px}
+  .doc__head{font-size:19px}
+  .doc__card p,.doc__card li{font-size:14px}
+  .doc__card ul{padding-left:19px}
+}

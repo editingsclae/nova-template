@@ -1,0 +1,273 @@
+:root{
+  --bg:#f2efe9;
+  --bg-light:#f7f5f1;
+  --shoe-bg:#e8e6e3;
+  --ink:#171614;
+  --muted:#6f6a62;
+  --muted-2:#8b857c;
+  --line:#dcd7cf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;font-size:14px;
+}
+a{text-decoration:none;color:inherit}
+button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}
+img{display:block;max-width:100%}
+.container{max-width:1280px;margin:0 auto;padding:0 33px}
+
+/* ---------- nav ---------- */
+.nav{background:var(--bg-light);position:relative;z-index:60;border-bottom:1px solid var(--line)}
+.nav__top{display:flex;align-items:center;gap:26px;min-height:72px}
+/* auth pages use a slim one-row nav: logo at one end, one way back at the other */
+.nav__top--auth{justify-content:space-between}
+.logo{
+  flex:none;max-width:300px;
+  font-size:clamp(21px,2.4vw,27px);font-weight:800;letter-spacing:.24em;line-height:1;
+  text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  /* grows the tap target to 45px inside the 72px row; the negative margin cancels it */
+  padding-block:12px;margin-block:-12px;
+}
+/* wide search field, submits to /shop?q= */
+.nav__search{
+  flex:1;display:flex;align-items:center;gap:8px;
+  max-width:620px;height:42px;margin:0 auto;padding:0 5px 0 18px;
+  background:#fff;border:1px solid var(--line);border-radius:999px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.nav__search:focus-within{border-color:#1b1a18;box-shadow:0 0 0 3px rgba(27,26,24,.08)}
+.nav__search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:13.5px;color:var(--ink)}
+.nav__search input::placeholder{color:#a8a199}
+.nav__search input::-webkit-search-cancel-button{-webkit-appearance:none}
+.nav__searchbtn{
+  flex:none;width:32px;height:32px;border-radius:50%;
+  display:grid;place-items:center;background:#1b1a18;color:#fff;
+  transition:background .15s;
+}
+.nav__searchbtn:hover{background:#000}
+.nav__actions{flex:none;display:flex;align-items:center;gap:24px;color:#2b2825}
+.nav__action,.nav__cart{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  /* 23px glyphs get a 25x25 hit box; the negative margin cancels the growth */
+  padding:1px;margin:-1px;
+}
+.nav__action:hover,.nav__cart:hover{color:#000}
+.nav__badge{
+  position:absolute;top:-6px;right:-7px;
+  background:#1b1a18;color:#fff;font-size:9px;font-weight:600;
+  min-width:14px;height:14px;border-radius:999px;
+  display:grid;place-items:center;padding:0 3px;
+}
+.nav__second{border-top:1px solid var(--line)}
+.nav__second-inner{display:flex;align-items:center;gap:28px;height:48px}
+.nav__cats{position:relative}
+.nav__catsbtn{display:inline-flex;align-items:center;gap:9px;height:48px;font-size:13px;font-weight:600;color:#1b1a18}
+.nav__drop{
+  position:absolute;left:0;top:calc(100% - 2px);z-index:80;
+  min-width:236px;max-width:min(340px,calc(100vw - 32px));
+  max-height:min(70vh,520px);overflow-y:auto;padding:8px;
+  background:#fff;border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 18px 44px rgba(20,18,16,.14);
+}
+.nav__drop a{
+  display:block;max-width:14rem;padding:9px 12px;border-radius:9px;
+  font-size:13px;color:#3b3833;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.nav__drop a:hover{background:var(--bg);color:#000}
+.nav__links{display:none;align-items:center;gap:28px;font-size:13px;color:#3b3833;min-width:0}
+.nav__links a{transition:color .15s;white-space:nowrap}
+.nav__links a:hover,.nav__links a[aria-current="page"]{color:#000}
+.nav__links a[aria-current="page"]{font-weight:600}
+/* category names are capped so a long one never pushes the row */
+.nav__catlink{display:none;max-width:14rem;overflow:hidden;text-overflow:ellipsis}
+.nav__menu{
+  display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:600;
+  padding-block:11px;margin-block:-11px;
+}
+/* the Menu button's phone-only twin, shown in the top row */
+.nav__burger{
+  display:none;flex:none;align-items:center;justify-content:center;
+  width:40px;height:40px;margin-left:-11px;color:#1b1a18;
+}
+.nav__mobile{
+  position:absolute;left:0;right:0;top:100%;z-index:70;
+  display:flex;flex-direction:column;gap:12px;
+  max-height:calc(100vh - 120px);overflow-y:auto;padding:18px 24px 24px;
+  background:var(--bg-light);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  box-shadow:0 24px 48px rgba(20,18,16,.12);
+}
+.nav__mobile .nav__search{display:flex;max-width:none;width:100%;margin:0}
+.nav__mobile-links{display:flex;flex-direction:column}
+.nav__mobile-links a{
+  display:block;padding:11px 2px;font-size:14px;font-weight:500;
+  color:#3b3833;border-bottom:1px solid var(--line);
+}
+.nav__mobile-links a:hover{color:#000}
+.nav__mobile-links .nav__mobile-cat{font-size:13px;font-weight:400}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:9px;
+  font-size:13px;font-weight:600;
+  padding:14px 22px;border-radius:999px;
+  transition:transform .15s,background .15s,color .15s;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn--dark{background:#1b1a18;color:#fff}
+.btn--dark:hover{background:#000}
+.btn--light{background:#f7f5f1;color:#1b1a18}
+.btn--ghost{background:#fbfaf8;color:#1b1a18;border:1px solid var(--line);padding:9px 18px;font-size:12.5px}
+
+/* ---------- product page links ---------- */
+.plink:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- section labels ---------- */
+.eyebrow{
+  font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--muted-2);margin-bottom:20px;
+}
+.eyebrow--dark{color:#8d8880}
+.eyebrow--light{color:rgba(255,255,255,.78)}
+.section-title{font-size:30px;font-weight:800;letter-spacing:-.03em;color:#191712}
+
+/* ---------- best sellers ---------- */
+.best{margin-top:44px}
+.best__head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+.best__head .eyebrow{margin-bottom:9px}
+.best__head h2{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.prod{position:relative}
+.prod__media{position:relative;height:184px;border-radius:10px;overflow:hidden;background:var(--shoe-bg)}
+.prod__media img{width:100%;height:100%;object-fit:cover;object-position:center 58%;transform:scale(1.12);transition:transform .35s}
+.prod:hover .prod__media img{transform:scale(1.18)}
+.tag{
+  position:absolute;top:13px;left:13px;z-index:2;
+  background:#1b1a18;color:#fff;font-size:10.5px;font-weight:600;
+  padding:5px 11px;border-radius:999px;
+}
+.prod__body{padding:16px 2px 0}
+.prod__body h4{font-size:14.5px;font-weight:700;letter-spacing:-.012em}
+/* stretched link — the card opens the product page, the cart button stays on top */
+.prod__name::after{content:"";position:absolute;inset:0}
+.prod__sub{font-size:12px;color:var(--muted-2);margin-top:4px}
+.prod__row{display:flex;align-items:center;justify-content:space-between;margin-top:11px}
+.prod__price{font-size:15px;font-weight:700}
+/* quick-add pill: icon + word, so the control reads as an action rather than a glyph */
+.prod__cart{
+  position:relative;z-index:2;flex:none;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  height:34px;padding:0 13px 0 11px;border-radius:999px;
+  background:#1b1a18;color:#fff;font-size:11.5px;font-weight:600;
+  box-shadow:0 1px 2px rgba(20,18,16,.22);
+  transition:background .16s,color .16s,transform .16s,box-shadow .16s;
+}
+.prod__cart:hover{background:#000;transform:translateY(-1px);box-shadow:0 7px 16px rgba(20,18,16,.24)}
+.prod__cart:active{transform:translateY(0) scale(.96)}
+.prod__cart:focus-visible{outline:2px solid #1b1a18;outline-offset:3px}
+.prod__cart:disabled{background:#e6e1d9;color:#a29b91;box-shadow:none;transform:none;cursor:default}
+
+/* Home Best Sellers only — shop.html and product.html keep the compact card.
+   Uncropped shoe (the source already fills ~91% of its width) and a two-column
+   body where the cart pill sits on the price line, not the rating row. */
+.best .prod__media{height:209px}
+.best .prod__media img{object-position:center 50%;transform:none}
+.best .prod:hover .prod__media img{transform:scale(1.03)}
+.best .prod__body{
+  display:grid;grid-template-columns:1fr auto;column-gap:12px;
+  padding:14px 12px 0;
+}
+.best .prod__info{grid-column:1;grid-row:1;min-width:0}
+.best .prod__cart{grid-column:2;grid-row:1;align-self:end}
+.best .prod__price{margin-top:11px}
+/* out-of-stock card treatment, shared by the landing grid and the shop grid */
+.prod--out .prod__media img{filter:grayscale(.85) brightness(1.04);opacity:.55}
+.prod--out .prod__media::after{
+  content:'Out of stock';position:absolute;inset:auto 0 0 0;z-index:2;
+  background:rgba(27,26,24,.82);color:#fff;font-size:11px;font-weight:600;
+  letter-spacing:.04em;text-align:center;padding:7px 0;
+}
+/* ---------- site footer ---------- */
+/* presentation only — no newsletter band, the storefront has no endpoint for it */
+.foot{background:var(--bg-light);margin-top:64px;padding-top:44px}
+.foot__grid{
+  display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.8fr) minmax(0,.8fr);
+  gap:24px;padding:0 18px 6px;
+}
+.foot__brand{min-width:0;max-width:420px}
+.foot__logo{
+  display:inline-block;font-size:21px;font-weight:800;letter-spacing:.26em;line-height:1;
+  color:var(--ink);text-transform:uppercase;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.foot__tagline{font-size:12.5px;line-height:1.8;color:var(--muted);margin-top:15px}
+.foot__social{display:flex;align-items:center;gap:17px;margin-top:19px}
+.foot__social a{
+  color:#4a453e;display:inline-flex;padding:4px;border-radius:6px;
+  transition:color .15s,background .15s;
+}
+.foot__social a:hover{color:var(--ink);background:rgba(27,26,24,.05)}
+.foot__col h2{font-size:13px;font-weight:700;color:#191712;margin-bottom:12px}
+.foot__col a{
+  display:block;max-width:14rem;font-size:12.5px;color:var(--muted);padding:2px 0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .15s;
+}
+.foot__col a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.foot__bottom{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-top:1px solid var(--line);margin:48px 18px 0;padding:20px 0 24px;
+  font-size:12px;color:var(--muted-2);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width:1080px){
+  .grid4{grid-template-columns:repeat(2,1fr)}
+  .container{padding:0 24px}
+  .foot__grid{grid-template-columns:1fr 1fr;gap:34px 24px;padding:0 0 6px}
+  .foot__brand{grid-column:1/-1;max-width:none}
+  .foot__bottom{margin:48px 0 0}
+}
+@media (max-width:600px){
+  .grid4{grid-template-columns:1fr}
+  /* the home product rows are the only heads that compete for width here — a
+     long title like "Featured Products" otherwise squeezes the pill into two
+     lines. Scoped to .best so the PDP "Others in this family" head is untouched. */
+  .best .best__head{align-items:center;gap:14px}
+  .best .best__head h2{font-size:25px}
+  .best .best__head .btn{flex:none;white-space:nowrap}
+  .foot__grid{grid-template-columns:1fr}
+  .foot__bottom{flex-direction:column;align-items:flex-start;gap:10px}
+}
+
+/* ---------- header rows ---------- */
+/* below lg the search moves into the menu panel */
+@media (max-width:1023px){
+  .nav__search{display:none}
+}
+/* from lg: Home, Shop and the first 3 categories; the 4th joins at xl */
+@media (min-width:1024px){
+  .nav__search{display:flex}
+  .nav__links{display:flex}
+  .nav__catlink{display:block}
+  .nav__catlink--extra{display:none}
+  .nav__menu{display:none}
+  .nav__mobile{display:none}
+}
+@media (min-width:1280px){
+  .nav__catlink--extra{display:block}
+}
+@media (max-width:600px){
+  /* one-row DSK-style bar: burger, wordmark, then account + cart at the far edge */
+  .nav__top{gap:8px;min-height:62px}
+  .nav__burger{display:inline-flex}
+  .nav__second{display:none}
+  .logo{max-width:180px;letter-spacing:.18em}
+  .nav__actions{margin-left:auto;gap:18px}
+}

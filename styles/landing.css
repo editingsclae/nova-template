@@ -1,0 +1,261 @@
+/* Home page only: hero carousel, category tiles, promo banners, features, technology. */
+
+/* ---------- hero carousel ---------- */
+.hero-slider{
+  position:relative;width:100%;height:530px;overflow:hidden;
+  background:#131211;color:#fff;
+}
+.hero-slide{
+  position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .55s ease,visibility 0s linear .55s;
+}
+.hero-slide.is-on{
+  opacity:1;visibility:visible;pointer-events:auto;
+  transition:opacity .55s ease;
+}
+.hero-slide__img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
+}
+.hero-slide__scrim{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,
+    rgba(20,18,16,.82) 0%,rgba(20,18,16,.58) 42%,
+    rgba(20,18,16,.16) 72%,rgba(20,18,16,.02) 100%);
+}
+/* pale product shots wash out the headline: this slide holds the scrim deeper across the copy */
+.hero-slide--light .hero-slide__scrim{
+  background:linear-gradient(90deg,
+    rgba(20,18,16,.86) 0%,rgba(20,18,16,.7) 46%,
+    rgba(20,18,16,.34) 76%,rgba(20,18,16,.1) 100%);
+}
+@media (max-width:600px){
+  .hero-slide--light .hero-slide__scrim{
+    background:linear-gradient(90deg,
+      rgba(20,18,16,.9) 0%,rgba(20,18,16,.78) 62%,rgba(20,18,16,.3) 100%);
+  }
+}
+.hero-slide__copy{
+  position:absolute;inset:0;z-index:3;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  width:100%;max-width:1280px;margin:0 auto;padding:0 81px;
+  pointer-events:none;
+}
+.hero-slide__copy .btn{pointer-events:auto;position:relative;z-index:5;font-size:14px;padding:14px 32px}
+.hero-slide__label{
+  font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(255,255,255,.78);margin-bottom:20px;
+}
+.hero-slide__title{
+  font-size:62px;line-height:.98;font-weight:800;letter-spacing:-.035em;
+  color:#fff;max-width:14ch;text-wrap:balance;
+}
+.hero-slide__lede{
+  margin:16px 0 24px;font-size:16.5px;line-height:1.45;
+  color:rgba(255,255,255,.82);max-width:420px;
+}
+/* the whole slide is the link when a slide has no button of its own */
+.hero-slide__link{position:absolute;inset:0;z-index:4}
+.hero-slide__link:focus-visible{outline-offset:-4px}
+
+.hero-slider__nav{position:absolute;right:33px;bottom:22px;z-index:6;display:flex;gap:8px}
+.hero-arrow{
+  width:38px;height:38px;border-radius:50%;
+  display:grid;place-items:center;
+  background:rgba(255,255,255,.14);color:#fff;
+  border:1px solid rgba(255,255,255,.32);
+  backdrop-filter:blur(6px);
+  transition:background .15s,border-color .15s;
+}
+.hero-arrow:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.6)}
+
+.hero-dots{
+  position:absolute;left:50%;bottom:30px;transform:translateX(-50%);
+  z-index:6;display:flex;align-items:center;gap:8px;
+}
+/* the dot VISUAL is an 8px circle; the transparent padding grows the hit box to
+   24x24 and the negative margins cancel that growth, so the row never moves */
+.hero-dot{
+  box-sizing:content-box;
+  width:8px;height:8px;padding:8px;margin:-8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.38);
+  background-clip:content-box;
+  transition:width .2s,background .2s;
+}
+.hero-dot.is-on{
+  /* content-box sizing means `width` is the VISUAL width: 22px is the active pill */
+  width:22px;
+  /* background-color, not the shorthand: the shorthand resets background-clip */
+  background-color:#fff;
+}
+
+/* ---------- category tiles ---------- */
+.tiles{margin-top:34px}
+.tiles .section-title{margin-bottom:20px}
+.tiles__row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+/* the card IS the shot: the catalogue photos already sit on a flat grey studio
+   background, so the label overlays their empty top strip instead of a plate */
+.tile{
+  position:relative;display:block;overflow:hidden;min-width:0;
+  aspect-ratio:4/3;border-radius:8px;background:#dfdcda;color:#191712;
+}
+.tile:focus-visible{outline:2px solid #1b1a18;outline-offset:3px}
+.tile__name{
+  position:absolute;z-index:2;left:20px;top:14px;
+  font-size:16px;font-weight:700;letter-spacing:-.012em;
+}
+.tile__go{
+  position:absolute;z-index:2;left:20px;top:38px;
+  display:flex;align-items:center;gap:5px;
+  font-size:12.5px;font-weight:500;color:#57524b;
+  transition:gap .2s ease,color .2s ease;
+}
+.tile__img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  transition:transform .35s ease;
+}
+.tile:hover .tile__img{transform:scale(1.04)}
+.tile:hover .tile__go{gap:9px;color:#191712}
+/* the template auto-fits one row from lg so 7 tiles fit; our four tiles are a
+   single 4-up row at every width, so only the gap changes */
+@media (min-width:1024px){
+  .tiles__row{gap:22px}
+}
+
+/* ---------- promo banners ---------- */
+.banners{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  width:100%;max-width:1280px;margin:52px auto 0;padding:0 33px;
+}
+.banner{
+  position:relative;height:386px;overflow:hidden;border-radius:10px;
+  background:#3a3631;display:flex;align-items:center;padding:0 40px;color:#fff;
+}
+.banner__img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center 58%;
+}
+.banner__scrim{
+  position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,
+    rgba(20,18,16,.78) 0%,rgba(20,18,16,.42) 55%,rgba(20,18,16,.05) 100%);
+}
+.banner__text{position:relative;z-index:2;max-width:60%}
+.banner__text h3{font-size:34px;line-height:1.12;font-weight:800;letter-spacing:-.015em;text-transform:uppercase}
+.banner__text p{font-size:13px;line-height:1.6;margin:16px 0 22px;max-width:272px;color:rgba(255,255,255,.85)}
+.banner__text .eyebrow{font-size:11px;margin-bottom:12px;color:rgba(255,255,255,.78)}
+.banner .btn{padding:15px 22px}
+
+/* ---------- features ---------- */
+.features{background:var(--bg-light);margin-top:64px}
+.features__inner{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  max-width:1280px;margin:0 auto;padding:40px 33px;
+}
+.feature{display:flex;align-items:center;justify-content:center;gap:24px}
+.feature svg{flex:none;color:#1c1b18}
+.feature h5{font-size:14px;font-weight:700}
+.feature p{font-size:11.5px;color:var(--muted-2);margin-top:4px}
+
+/* ---------- technology ---------- */
+/* the panel keeps the photo's own ratio, so leads drawn in image pixels land on
+   the shoe at every desktop width instead of drifting with a cover crop */
+.tech{width:100%;max-width:1280px;margin:56px auto 64px;padding:0 33px;scroll-margin-top:24px}
+.tech__panel{
+  position:relative;aspect-ratio:2103/748;
+  background:#131211;color:#fff;overflow:hidden;border-radius:10px;
+}
+.tech__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tech__scrim{
+  position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,
+    rgba(19,18,17,.92) 0%,rgba(19,18,17,.76) 24%,
+    rgba(19,18,17,.4) 40%,rgba(19,18,17,0) 54%);
+}
+.tech__leads{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.tech__leads line{stroke:rgba(242,239,233,.5);stroke-width:1.6}
+.tech__leads circle{fill:rgba(242,239,233,.8)}
+.callouts{list-style:none;position:absolute;inset:0;z-index:3;pointer-events:none}
+.callouts li{
+  position:absolute;left:84.64%;top:var(--y);transform:translateY(-50%);
+  display:flex;align-items:center;
+  color:#f2efe9;font-size:12.5px;font-weight:500;white-space:nowrap;
+}
+.callouts li::before{
+  content:'';flex:none;width:7px;height:7px;border-radius:50%;
+  background:#f2efe9;margin-right:11px;
+}
+.tech__copy{
+  position:absolute;z-index:4;left:0;top:0;bottom:0;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  width:min(52%,560px);padding:0 0 0 51px;
+}
+.tech__copy .eyebrow{margin-bottom:10px}
+.tech__copy h2{font-size:44px;line-height:1.09;font-weight:800;letter-spacing:-.015em}
+.tech__lede{font-size:17px;line-height:1.5;color:#a5a099;margin:16px 0 18px;max-width:400px}
+
+/* ---------- responsive ---------- */
+/* at the narrow end of the desktop range the longest label would touch the panel edge */
+@media (max-width:1200px){
+  .callouts li{font-size:11.5px}
+}
+@media (max-width:1080px){
+  .hero-slider{height:460px}
+  .hero-slide__copy{padding:0 24px}
+  .hero-slide__title{font-size:48px}
+  .banners{grid-template-columns:1fr;padding:0 24px}
+  /* stacked, centred pairs sit at four different offsets because each copy block
+     is a different width; pin the row left so icons and text form two columns */
+  .features__inner{grid-template-columns:1fr;padding:30px 24px;gap:20px}
+  .feature{justify-content:flex-start;gap:16px}
+  /* no room to overlay the copy on a short panel: the photo becomes a band
+     under the text and the callouts turn into a legend over it */
+  .tech{margin:44px auto 52px;padding:0 24px}
+  .tech__panel{aspect-ratio:auto;--band:330px}
+  /* the band is an absolutely positioned layer, so it needs flow space of its own */
+  .tech__panel::after{content:'';display:block;height:var(--band)}
+  .tech__copy{position:static;width:auto;padding:46px 33px 34px}
+  .tech__copy h2{font-size:38px}
+  .tech__img{inset:auto 0 0 0;height:var(--band)}
+  .tech__scrim{
+    inset:auto 0 0 0;height:var(--band);
+    background:linear-gradient(180deg,rgba(19,18,17,0) 42%,rgba(19,18,17,.66) 100%);
+  }
+  .tech__leads{display:none}
+  .callouts{inset:auto auto 16px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+  .callouts li{position:static;left:auto;top:auto;transform:none;font-size:11px}
+  .callouts li::before{width:6px;height:6px;margin-right:8px}
+}
+@media (max-width:1023px){
+  /* below desktop width four cards leave no room for the label, so the row becomes a 2x2 */
+  .tiles__row{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+}
+@media (max-width:600px){
+  .hero-slider{height:470px}
+  .hero-slide__title{font-size:38px;max-width:12ch}
+  .hero-slide__lede{font-size:14.5px}
+  .hero-slider__nav{right:16px;bottom:16px}
+  .hero-dots{left:24px;transform:none;bottom:26px}
+  .tiles__row{gap:10px}
+  /* at this size the grey strip above the shoe is only ~17px tall, so the label
+     gets a fade of the card's own grey to stand on */
+  .tile::before{
+    content:'';position:absolute;z-index:1;left:0;right:0;top:0;height:62%;
+    background:linear-gradient(180deg,
+      rgba(223,220,218,.96) 0%,rgba(223,220,218,.8) 42%,rgba(223,220,218,0) 100%);
+  }
+  .tile__name{left:12px;top:9px;font-size:13px}
+  .tile__go{left:12px;top:27px;font-size:10.5px;gap:4px}
+  .tile__go svg{width:10px;height:10px}
+  .banner{height:330px;padding:0 24px}
+  .banner__text{max-width:82%}
+  .banner__text h3{font-size:27px}
+  .tech__copy{padding:38px 24px 28px}
+  .tech__copy h2{font-size:31px;line-height:1.12}
+  .tech__lede{font-size:15.5px}
+  .tech__img{object-position:right center}
+  .tech__panel{--band:250px}
+  .callouts{inset:auto auto 12px 14px}
+}
