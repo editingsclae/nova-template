@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { getFooterSettings, cleanCategoryHandle, STORE_NAME } from '@/lib/medusa';
+import { cleanCategoryHandle, STORE_NAME } from '@/lib/medusa';
+import { useSiteData } from './SiteData';
 import { Facebook, Instagram, TikTok } from './icons';
 
 const ICON_MAP = {
@@ -18,30 +18,15 @@ const LABEL_MAP = {
 };
 
 export default function SiteFooter() {
-  const [footer, setFooter] = useState({
-    store_name: STORE_NAME,
-    description: 'Cash on delivery across Tunisia.',
-    social_links: [],
-    shop_categories: [],
-    pages: [],
-  });
+  const { footer } = useSiteData();
+  const f = footer || {};
 
-  useEffect(() => {
-    getFooterSettings()
-      .then((data) => {
-        if (data) setFooter(data);
-      })
-      .catch((e) => {
-        console.error('Failed to load footer settings:', e);
-      });
-  }, []);
-
-  const storeName = footer.store_name || STORE_NAME;
+  const storeName = f.store_name || STORE_NAME;
   const description =
-    footer.description || 'Modern footwear for a bolder tomorrow. Cash on delivery across Tunisia.';
+    f.description || 'Modern footwear for a bolder tomorrow. Cash on delivery across Tunisia.';
 
   // Render only valid social networks and only http(s) links
-  const validSocial = (footer.social_links || []).filter(
+  const validSocial = (f.social_links || []).filter(
     (s) =>
       s &&
       s.network &&
@@ -50,8 +35,8 @@ export default function SiteFooter() {
       /^https?:\/\//i.test(s.url)
   );
 
-  const shopCats = (footer.shop_categories || []).slice(0, 5);
-  const supportPages = footer.pages || [];
+  const shopCats = (f.shop_categories || []).slice(0, 5);
+  const supportPages = f.pages || [];
 
   return (
     <footer className="foot">

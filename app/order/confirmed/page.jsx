@@ -2,18 +2,99 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { TickPlain } from '@/components/icons';
+import { useCart } from '@/lib/cart';
 import { getOrder, formatPrice, cleanVariantTitle, countryName } from '@/lib/medusa';
+
+function ConfirmedSkeleton() {
+  const block = (w, h, extra = {}) => ({
+    width: w,
+    height: h,
+    background: 'var(--line, #e5e5e4)',
+    borderRadius: 4,
+    ...extra,
+  });
+
+  return (
+    <main className="container">
+      <div className="conf">
+        <div className="conf__card" aria-busy="true" aria-label="Loading order details">
+          <div className="conf__tick" style={{ background: 'var(--bg-light, #f6f5f3)', borderColor: 'var(--line, #e5e5e4)' }}>
+            <div style={block(24, 24, { borderRadius: 12, opacity: 0.5 })} />
+          </div>
+          <div style={block(200, 32, { margin: '0 auto', borderRadius: 6 })} />
+          <div style={block(320, 16, { margin: '14px auto 0', maxWidth: '80%' })} />
+
+          <div className="conf__grid">
+            <div>
+              <p className="conf__k">Order number</p>
+              <div style={block(120, 20)} />
+            </div>
+            <div>
+              <p className="conf__k">Status</p>
+              <div style={block(90, 20)} />
+            </div>
+            <div>
+              <p className="conf__k">Ship to</p>
+              <div style={{ display: 'grid', gap: 6 }}>
+                <div style={block(130, 16)} />
+                <div style={block(160, 16)} />
+                <div style={block(110, 16)} />
+              </div>
+            </div>
+            <div>
+              <p className="conf__k">Payment</p>
+              <div style={{ display: 'grid', gap: 6 }}>
+                <div style={block(120, 16)} />
+                <div style={block(150, 16)} />
+              </div>
+            </div>
+          </div>
+
+          <div className="conf__items">
+            <h2>Your items</h2>
+            <div className="sline" style={{ marginBottom: 14 }}>
+              <div className="sline__media" style={{ background: 'var(--line, #e5e5e4)' }} />
+              <div>
+                <div style={block(180, 16, { marginBottom: 6 })} />
+                <div style={block(100, 14)} />
+              </div>
+              <div style={block(70, 18, { marginLeft: 'auto' })} />
+            </div>
+            <div className="sumrow sumrow--total" style={{ borderTop: '1px solid var(--line)' }}>
+              <span>Total due on delivery</span>
+              <div style={block(90, 24)} />
+            </div>
+          </div>
+
+          <div className="conf__acts">
+            <div style={block(160, 42, { borderRadius: 8 })} />
+            <div style={block(140, 42, { borderRadius: 8 })} />
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
 
 function ConfirmedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
+  const { clear } = useCart();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const clearedRef = useRef(false);
+
+  useEffect(() => {
+    if (orderId && !clearedRef.current) {
+      clearedRef.current = true;
+      clear();
+    }
+  }, [orderId, clear]);
 
   useEffect(() => {
     if (!orderId) {
@@ -37,11 +118,7 @@ function ConfirmedContent() {
   }, [orderId]);
 
   if (loading) {
-    return (
-      <main className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
-        <p style={{ color: 'var(--sub, #666)' }}>Loading order details…</p>
-      </main>
-    );
+    return <ConfirmedSkeleton />;
   }
 
   if (error || (!order && !loading)) {
@@ -152,7 +229,7 @@ export default function OrderConfirmedPage() {
   return (
     <div className="shop">
       <SiteHeader />
-      <Suspense fallback={<div className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>Loading confirmation…</div>}>
+      <Suspense fallback={<ConfirmedSkeleton />}>
         <ConfirmedContent />
       </Suspense>
       <SiteFooter />

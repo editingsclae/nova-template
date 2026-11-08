@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/lib/cart';
-import { getCategories, cleanCategoryHandle, STORE_NAME } from '@/lib/medusa';
+import { cleanCategoryHandle, STORE_NAME } from '@/lib/medusa';
+import { useSiteData } from './SiteData';
 import { Bag, ChevDown, Menu, Search, User } from './icons';
 
 const catHref = (handle) => '/c/' + encodeURIComponent(cleanCategoryHandle(handle));
@@ -12,8 +13,8 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { ready, count, openDrawer } = useCart();
+  const { categories = [] } = useSiteData();
 
-  const [categories, setCategories] = useState([]);
   const [query, setQuery] = useState('');
   const [catsOpen, setCatsOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,16 +24,6 @@ export default function SiteHeader() {
   const cartButtonRef = useRef(null);
 
   const isCartPage = pathname === '/cart' || pathname.startsWith('/checkout');
-
-  useEffect(() => {
-    getCategories()
-      .then((cats) => {
-        if (Array.isArray(cats)) setCategories(cats);
-      })
-      .catch((e) => {
-        console.error('Failed to load categories in header:', e);
-      });
-  }, []);
 
   function submitSearch(e) {
     e.preventDefault();

@@ -52,7 +52,7 @@ const Err = ({ msg }) => (msg ? <p className="err"><Warn /><span>{msg}</span></p
 
 export default function CheckoutView() {
   const router = useRouter();
-  const { cart, cartId, ready, lines, count, totals, setShippingMethod, clear } = useCart();
+  const { cart, cartId, ready, lines, count, totals, setShippingMethod } = useCart();
   const [f, setF] = useState(EMPTY);
   const [errs, setErrs] = useState({});
   const [bar, setBar] = useState(null);
@@ -64,6 +64,11 @@ export default function CheckoutView() {
   const [shippingLoading, setShippingLoading] = useState(true);
   const [shippingError, setShippingError] = useState(null);
   const [selectedShippingId, setSelectedShippingId] = useState(null);
+
+  const fetchedCartIdRef = useRef(null);
+  const hasLoadedShippingRef = useRef(false);
+  const shippingMethodsRef = useRef(cart?.shipping_methods);
+  shippingMethodsRef.current = cart?.shipping_methods;
 
   // Prefill saved address if available
   useEffect(() => {
@@ -93,12 +98,20 @@ export default function CheckoutView() {
       return;
     }
 
+    if (busy || orderPlaced) return;
+    if (fetchedCartIdRef.current === cartId) return;
+
+    fetchedCartIdRef.current = cartId;
     let active = true;
-    setShippingLoading(true);
+
+    if (!hasLoadedShippingRef.current) {
+      setShippingLoading(true);
+    }
 
     getShippingOptions(cartId)
       .then((opts) => {
         if (!active) return;
+        hasLoadedShippingRef.current = true;
         const list = Array.isArray(opts) ? opts : [];
         setShippingOptions(list);
 
@@ -108,7 +121,7 @@ export default function CheckoutView() {
         } else {
           setShippingError(null);
           // Pick currently selected option on cart, or default to the first one
-          const currentMethodId = cart?.shipping_methods?.[0]?.shipping_option_id;
+          const currentMethodId = shippingMethodsRef.current?.[0]?.shipping_option_id;
           const matched = list.find((o) => o.id === currentMethodId);
           const pick = matched ? matched.id : list[0].id;
           setSelectedShippingId(pick);
@@ -123,6 +136,7 @@ export default function CheckoutView() {
       })
       .catch((err) => {
         if (!active) return;
+        hasLoadedShippingRef.current = true;
         console.error('[checkout] Failed to load shipping options:', err);
         setShippingError('Shipping is not set up yet. Please check back later.');
       })
@@ -133,7 +147,7 @@ export default function CheckoutView() {
     return () => {
       active = false;
     };
-  }, [cartId, cart?.shipping_methods, setShippingMethod]);
+  }, [cartId, busy, orderPlaced, setShippingMethod]);
 
   const t = useMemo(() => totals(), [totals]);
   const n = lines.reduce((a, l) => a + l.qty, 0);
@@ -313,10 +327,7 @@ export default function CheckoutView() {
           localStorage.setItem(ADDR_KEY, JSON.stringify(collect()));
         } catch (err) {}
 
-        // Clear local cart
-        await clear();
-
-        // Navigate to confirmed page
+        // Navigate to confirmed page (cart is cleared on confirmed page)
         router.push(`/order/confirmed?id=${completed.order.id}`);
         return;
       }
