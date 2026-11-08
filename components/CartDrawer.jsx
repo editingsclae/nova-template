@@ -2,8 +2,9 @@
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { useCart } from '@/lib/cart';
-import { money, productUrl } from '@/lib/nova';
-import { Bag, Truck, X } from './icons';
+import { formatPrice } from '@/lib/medusa';
+import { productUrl } from '@/lib/nova';
+import { Truck, X } from './icons';
 
 export default function CartDrawer() {
   const { lines, count, subtotal, totals, setQty, remove, drawerOpen, closeDrawer, MAX_QTY } = useCart();
@@ -27,6 +28,7 @@ export default function CartDrawer() {
   }, [drawerOpen, closeDrawer]);
 
   const t = totals();
+  const curr = t.currencyCode;
 
   return (
     <div className={'drawer' + (drawerOpen ? ' is-open' : '')}>
@@ -35,7 +37,9 @@ export default function CartDrawer() {
         ref={panel}>
         <header className="drawer__head">
           <h2 id="drawerTitle">Your cart <span>({count})</span></h2>
-          <button className="drawer__x" type="button" aria-label="Close cart" onClick={closeDrawer} ref={closeBtn}><X size={14} width={2.2} /></button>
+          <button className="drawer__x" type="button" aria-label="Close cart" onClick={closeDrawer} ref={closeBtn}>
+            <X size={14} width={2.2} />
+          </button>
         </header>
 
         {lines.length === 0 ? (
@@ -54,34 +58,53 @@ export default function CartDrawer() {
             <div className="drawer__ship">
               <Truck />
               <div className="drawer__ship-text">
-                <span>Delivery by <b>{t.method.label}</b> across Tunisia — <b>{money(t.shipping)}</b>, collected on arrival.</span>
+                <span>Cash on delivery across Tunisia. Shipping is calculated at checkout.</span>
               </div>
             </div>
 
             <div className="drawer__body">
-              {lines.map((l) => (
-                <div className={'dline' + (l.stock ? '' : ' dline--out')} key={l.i}>
-                  <div className="dline__media"><img src={'/images/' + l.img + '.png'} alt={l.name} /></div>
-                  <div className="dline__info">
-                    <h3><Link className="plink" href={productUrl(l.id)}>{l.name}</Link></h3>
-                    <p className="dline__meta">EU {l.size} &middot; {l.sub}</p>
-                    <div className="qty qty--sm">
-                      <button type="button" aria-label="Decrease quantity" disabled={l.qty <= 1} onClick={() => setQty(l.i, l.qty - 1)}>&minus;</button>
-                      <span aria-live="polite">{l.qty}</span>
-                      <button type="button" aria-label="Increase quantity" disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.i, l.qty + 1)}>+</button>
+              {lines.map((l) => {
+                const imgSrc = l.img?.startsWith('http') || l.img?.startsWith('/')
+                  ? l.img
+                  : '/images/' + l.img + '.png';
+
+                return (
+                  <div className={'dline' + (l.stock ? '' : ' dline--out')} key={l.lineId}>
+                    <div className="dline__media">
+                      <img src={imgSrc || '/images/hero-shoe.png'} alt={l.name} />
+                    </div>
+                    <div className="dline__info">
+                      <h3>
+                        <Link className="plink" href={productUrl(l.handle || l.productId)} onClick={closeDrawer}>
+                          {l.name}
+                        </Link>
+                      </h3>
+                      {l.variantTitle && (
+                        <p className="dline__meta">{l.variantTitle}</p>
+                      )}
+                      <div className="qty qty--sm">
+                        <button type="button" aria-label="Decrease quantity" disabled={l.qty <= 1} onClick={() => setQty(l.lineId, l.qty - 1)}>&minus;</button>
+                        <span aria-live="polite">{l.qty}</span>
+                        <button type="button" aria-label="Increase quantity" disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.lineId, l.qty + 1)}>+</button>
+                      </div>
+                      {l.error && (
+                        <p className="err-hint" style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: 4 }}>
+                          {l.error}
+                        </p>
+                      )}
+                    </div>
+                    <div className="dline__side">
+                      <p className="dline__price">{formatPrice(l.line, curr)}</p>
+                      <button className="dline__rm" type="button" onClick={() => remove(l.lineId)}>Remove</button>
                     </div>
                   </div>
-                  <div className="dline__side">
-                    <p className="dline__price">{money(l.line)}</p>
-                    <button className="dline__rm" type="button" onClick={() => remove(l.i)}>Remove</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <footer className="drawer__foot">
-              <div className="drawer__row"><span>Subtotal</span><b>{money(subtotal)}</b></div>
-              <p className="drawer__note">Shipping and cash-on-delivery fees are calculated at checkout.</p>
+              <div className="drawer__row"><span>Subtotal</span><b>{formatPrice(subtotal, curr)}</b></div>
+              <p className="drawer__note">Shipping and delivery fees are calculated at checkout.</p>
               <div className="drawer__cta">
                 <Link className="btn btn--ghost btn--ghost-lg" href="/cart" onClick={closeDrawer}>View cart</Link>
                 <Link className="btn btn--dark" href="/checkout" onClick={closeDrawer}>Checkout</Link>
