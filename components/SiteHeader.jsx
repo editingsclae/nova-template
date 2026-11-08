@@ -2,17 +2,18 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { CATS } from '@/lib/nova';
 import { useCart } from '@/lib/cart';
+import { getCategories, cleanCategoryHandle, STORE_NAME } from '@/lib/medusa';
 import { Bag, ChevDown, Menu, Search, User } from './icons';
 
-const catHref = (id) => '/shop?cat=' + encodeURIComponent(id);
+const catHref = (handle) => '/c/' + encodeURIComponent(cleanCategoryHandle(handle));
 
 export default function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { ready, count, openDrawer } = useCart();
 
+  const [categories, setCategories] = useState([]);
   const [query, setQuery] = useState('');
   const [catsOpen, setCatsOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,6 +23,16 @@ export default function SiteHeader() {
   const cartButtonRef = useRef(null);
 
   const isCartPage = pathname === '/cart' || pathname.startsWith('/checkout');
+
+  useEffect(() => {
+    getCategories()
+      .then((cats) => {
+        if (Array.isArray(cats)) setCategories(cats);
+      })
+      .catch((e) => {
+        console.error('Failed to load categories in header:', e);
+      });
+  }, []);
 
   function submitSearch(e) {
     e.preventDefault();
@@ -72,6 +83,8 @@ export default function SiteHeader() {
     ? <span className="nav__badge" aria-hidden="true">{count}</span>
     : null;
 
+  const topCats = categories.slice(0, 5);
+
   return (
     <header className="nav">
       <div className="container nav__top">
@@ -82,7 +95,7 @@ export default function SiteHeader() {
           <Menu />
         </button>
 
-        <Link className="logo" href="/" aria-label="NOVA home">NOVA</Link>
+        <Link className="logo" href="/" aria-label={`${STORE_NAME} home`}>{STORE_NAME}</Link>
 
         {searchField('site-search')}
 
@@ -119,8 +132,8 @@ export default function SiteHeader() {
             </button>
             {catsOpen && (
               <div className="nav__drop" id="all-categories">
-                {CATS.map((c) => (
-                  <Link key={c.id} href={catHref(c.id)} onClick={() => setCatsOpen(false)}>{c.label}</Link>
+                {categories.map((c) => (
+                  <Link key={c.id} href={catHref(c.handle)} onClick={() => setCatsOpen(false)}>{c.name}</Link>
                 ))}
               </div>
             )}
@@ -129,10 +142,10 @@ export default function SiteHeader() {
           <nav className="nav__links" aria-label="Main">
             <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>Home</Link>
             <Link href="/shop" aria-current={pathname.startsWith('/shop') ? 'page' : undefined}>Shop</Link>
-            {CATS.map((c, i) => (
-              <Link key={c.id} href={catHref(c.id)} title={c.label}
+            {topCats.map((c, i) => (
+              <Link key={c.id} href={catHref(c.handle)} title={c.name}
                 className={'nav__catlink' + (i >= 3 ? ' nav__catlink--extra' : '')}>
-                {c.label}
+                {c.name}
               </Link>
             ))}
           </nav>
@@ -145,9 +158,9 @@ export default function SiteHeader() {
           <nav className="nav__mobile-links" aria-label="Mobile">
             <Link href="/">Home</Link>
             <Link href="/shop">Shop</Link>
-            {CATS.map((c) => (
-              <Link key={c.id} className="nav__mobile-cat" href={catHref(c.id)}
-                onClick={() => setMobileOpen(false)}>{c.label}</Link>
+            {categories.map((c) => (
+              <Link key={c.id} className="nav__mobile-cat" href={catHref(c.handle)}
+                onClick={() => setMobileOpen(false)}>{c.name}</Link>
             ))}
           </nav>
         </div>

@@ -1,8 +1,5 @@
-import '@/styles/auth.css';
-import LoginForm from './LoginForm';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Sign in' };
-
-export default function LoginPage() {
-  return <LoginForm />;
+export default function LoginRedirect() {
+  redirect('/account/login');
 }

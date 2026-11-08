@@ -1,17 +1,5 @@
-import '@/styles/pages.css';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
-import PageArticle from '@/components/PageArticle';
-import { PAGES } from '@/lib/pages';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Returns' };
-
-export default function ReturnsPage() {
-  return (
-    <div className="docpage">
-      <SiteHeader />
-      <PageArticle page={PAGES.returns} />
-      <SiteFooter />
-    </div>
-  );
+export default function ReturnsRedirect() {
+  redirect('/pages/returns');
 }

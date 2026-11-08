@@ -1,8 +1,5 @@
-import '@/styles/auth.css';
-import SignupForm from './SignupForm';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Create account' };
-
-export default function SignupPage() {
-  return <SignupForm />;
+export default function SignupRedirect() {
+  redirect('/account/register');
 }

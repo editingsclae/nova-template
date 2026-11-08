@@ -3,12 +3,13 @@ import '@/styles/form.css';
 import '@/styles/cart.css';
 import { CartProvider } from '@/lib/cart';
 import CartDrawer from '@/components/CartDrawer';
+import { STORE_NAME } from '@/lib/medusa';
 
 export const metadata = {
   metadataBase: new URL('https://nova.store.example'),
   title: {
-    default: 'NOVA — Footwear for a Bolder Tomorrow',
-    template: '%s — NOVA'
+    default: `${STORE_NAME} — Footwear for a Bolder Tomorrow`,
+    template: `%s — ${STORE_NAME}`
   },
   description: 'Modern sneakers designed for everyday comfort, performance and style. Cash on delivery across Tunisia.'
 };
