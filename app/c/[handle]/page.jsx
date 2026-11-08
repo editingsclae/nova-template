@@ -2,7 +2,8 @@ import '@/styles/shop.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ShopView from '@/app/shop/ShopView';
-import { cleanCategoryHandle, getCategories } from '@/lib/medusa';
+import { cleanCategoryHandle, getCategories, getAllProducts } from '@/lib/medusa';
+import { mapProducts } from '@/lib/product-view';
 
 export async function generateMetadata({ params }) {
   const { handle } = await params;
@@ -29,13 +30,23 @@ export default async function CategoryPage({ params, searchParams }) {
   Object.entries(sp || {}).forEach(([k, v]) => {
     (Array.isArray(v) ? v : [v]).forEach((val) => urlParams.append(k, String(val)));
   });
-  // Ensure the category query parameter is set to this category
   urlParams.set('cat', clean);
+
+  const [rawProducts, rawCategories] = await Promise.all([
+    getAllProducts().catch(() => []),
+    getCategories().catch(() => []),
+  ]);
+  const products = mapProducts(rawProducts);
 
   return (
     <div className="shop">
       <SiteHeader />
-      <ShopView query={urlParams.toString()} fixedCategory={clean} />
+      <ShopView
+        query={urlParams.toString()}
+        fixedCategory={clean}
+        initialProducts={products}
+        initialCategories={rawCategories}
+      />
       <SiteFooter />
     </div>
   );
