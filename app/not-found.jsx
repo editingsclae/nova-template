@@ -2,10 +2,6 @@ import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 
-export const metadata = {
-  title: 'Page Not Found',
-};
-
 export default function NotFound() {
   return (
     <div className="shop">
