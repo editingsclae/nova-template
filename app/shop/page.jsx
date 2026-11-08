@@ -2,7 +2,7 @@ import '@/styles/shop.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ShopView from './ShopView';
-import { getAllProducts, getCategories } from '@/lib/medusa';
+import { getAllProducts, getCategories, getDefaultRegion } from '@/lib/medusa';
 import { mapProducts } from '@/lib/product-view';
 
 export const metadata = { title: 'Shop' };
@@ -14,11 +14,12 @@ export default async function ShopPage({ searchParams }) {
     (Array.isArray(v) ? v : [v]).forEach((val) => params.append(k, String(val)));
   });
 
-  const [rawProducts, rawCategories] = await Promise.all([
+  const [rawProducts, rawCategories, region] = await Promise.all([
     getAllProducts().catch(() => []),
     getCategories().catch(() => []),
+    getDefaultRegion().catch(() => null),
   ]);
-  const products = mapProducts(rawProducts);
+  const products = mapProducts(rawProducts, region?.currency_code);
 
   return (
     <div className="shop">

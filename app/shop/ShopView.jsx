@@ -77,7 +77,7 @@ export default function ShopView({
   // Compute price bounds from loaded products
   const { FLOOR, CEIL, STEP, currencyCode } = useMemo(() => {
     const prices = products.map((p) => p.price).filter((p) => typeof p === 'number' && !isNaN(p));
-    const curr = products[0]?.currencyCode || 'TND';
+    const curr = products[0]?.currencyCode || '';
     if (!prices.length) return { FLOOR: 0, CEIL: 1000, STEP: 25, currencyCode: curr };
     const minP = Math.floor(Math.min(...prices));
     const maxP = Math.ceil(Math.max(...prices));

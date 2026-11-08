@@ -13,10 +13,9 @@ import {
   getAllProducts,
   getProductsByIds,
   cleanCategoryHandle,
-  STORE_NAME,
 } from '@/lib/medusa';
-import { mapProduct } from '@/lib/product-view';
-import { LAYOUT, CATEGORY_TILE_PLACES } from '@/lib/declare-layout';
+import { mapProduct, mapProducts } from '@/lib/product-view';
+import { LAYOUT, CATEGORY_TILE_PLACES, visibleSections } from '@/lib/declare-layout';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -129,6 +128,8 @@ export default async function HomePage() {
     getCategories(),
   ]);
 
+  const currency = region?.currency_code || '';
+
   // 1. Hero slides (up to 3 from backend, fallback to welcome banner)
   const backendSlides = (storefront?.hero_slides || [])
     .filter((s) => s && s.enabled !== false)
@@ -145,7 +146,7 @@ export default async function HomePage() {
 
   const slides = backendSlides.length > 0 ? backendSlides : DEFAULT_SLIDES;
 
-  // 2. Category tiles (up to CATEGORY_TILE_PLACES = 4)
+  // 2. Category tiles: up to 4 tiles. If no tiles from backend, render categories as plain cards without an image.
   const backendTiles = (storefront?.category_tiles || [])
     .slice(0, CATEGORY_TILE_PLACES)
     .map((t) => ({
@@ -158,8 +159,8 @@ export default async function HomePage() {
   const fallbackTiles = (categories || []).slice(0, CATEGORY_TILE_PLACES).map((c) => ({
     id: c.id,
     label: c.name,
-    href: `/c/${c.handle}`,
-    img: `/images/cat-${c.handle}.png`,
+    href: `/c/${cleanCategoryHandle(c.handle)}`,
+    img: null,
   }));
 
   const tiles = backendTiles.length > 0 ? backendTiles : fallbackTiles;
@@ -178,64 +179,64 @@ export default async function HomePage() {
       href: bannerHref(b.link) || '/shop',
     }));
 
-  // 4. Product sections (Rule 24)
-  let newArrivals = [];
-  let bestSellers = [];
-  let featured = [];
+  // 4. Product sections cut with visibleSections
+  const defaultEyebrows = {
+    new_arrivals: 'Just In',
+    best_sellers: 'Top Rated',
+    featured: 'Hand Picked',
+  };
 
-  let newArrivalsTitle = 'New Arrivals';
-  let bestSellersTitle = 'Best Sellers';
-  let featuredTitle = 'Featured Products';
+  const defaultTitles = {
+    new_arrivals: 'New Arrivals',
+    best_sellers: 'Best Sellers',
+    featured: 'Featured Products',
+  };
 
-  if (!homeSections.declared) {
+  let rows = [];
+
+  if (!homeSections?.declared) {
     // While declared is false, show plain New Arrivals row (8 newest products)
     const rawNewest = await getAllProducts({
       limit: 8,
       regionId: region?.id,
       order: '-created_at',
     });
-    newArrivals = rawNewest.map(mapProduct);
+    const items = mapProducts(rawNewest, currency);
+    if (items.length > 0) {
+      rows = [
+        {
+          key: 'new_arrivals',
+          title: 'New Arrivals',
+          eyebrow: 'Just In',
+          items,
+        },
+      ];
+    }
   } else {
-    // When declared is true, draw exactly the sections returned (no empty rows)
-    const returnedSections = Array.isArray(homeSections.sections) ? homeSections.sections : [];
-
+    // When declared is true, cut sections with visibleSections helper
+    const cutSections = visibleSections(homeSections.sections);
     const allProductIds = Array.from(
-      new Set(returnedSections.flatMap((s) => s.product_ids || []))
+      new Set(cutSections.flatMap((s) => s.product_ids || []))
     );
 
     let productMap = new Map();
     if (allProductIds.length > 0) {
       const rawProducts = await getProductsByIds(allProductIds, region?.id);
-      productMap = new Map(rawProducts.map((p) => [p.id, mapProduct(p)]));
+      productMap = new Map(rawProducts.map((p) => [p.id, mapProduct(p, currency)]));
     }
 
-    const naSection = returnedSections.find((s) => s.key === 'new_arrivals');
-    if (naSection) {
-      if (naSection.title) newArrivalsTitle = naSection.title;
-      newArrivals = (naSection.product_ids || [])
-        .map((id) => productMap.get(id))
-        .filter(Boolean);
-    }
-
-    const bsSection = returnedSections.find((s) => s.key === 'best_sellers');
-    if (bsSection) {
-      if (bsSection.title) bestSellersTitle = bsSection.title;
-      bestSellers = (bsSection.product_ids || [])
-        .map((id) => productMap.get(id))
-        .filter(Boolean);
-    }
-
-    const featSection = returnedSections.find((s) => s.key === 'featured');
-    if (featSection) {
-      if (featSection.title) featuredTitle = featSection.title;
-      featured = (featSection.product_ids || [])
-        .map((id) => productMap.get(id))
-        .filter(Boolean);
-    }
+    rows = cutSections
+      .map((s) => ({
+        key: s.key,
+        title: s.title || defaultTitles[s.key] || s.key,
+        eyebrow: defaultEyebrows[s.key] || '',
+        items: (s.product_ids || []).map((id) => productMap.get(id)).filter(Boolean),
+      }))
+      .filter((row) => row.items.length > 0);
   }
 
-  const hasAnyProducts =
-    newArrivals.length > 0 || bestSellers.length > 0 || featured.length > 0;
+  const newArrivalsRow = rows.find((r) => r.key === 'new_arrivals');
+  const otherRows = rows.filter((r) => r.key !== 'new_arrivals');
 
   return (
     <>
@@ -251,28 +252,32 @@ export default async function HomePage() {
               <Link className="tile" href={t.href} key={t.id || t.href}>
                 <span className="tile__name">{t.label}</span>
                 <span className="tile__go">Explore <Arrow size={12} /></span>
-                <img
-                  className="tile__img"
-                  src={t.img}
-                  alt=""
-                  width="1024"
-                  height="768"
-                  loading="lazy"
-                  decoding="async"
-                />
+                {t.img ? (
+                  <img
+                    className="tile__img"
+                    src={t.img}
+                    alt=""
+                    width="1024"
+                    height="768"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : null}
               </Link>
             ))}
           </div>
         </section>
       )}
 
-      {/* Row 1: New Arrivals */}
-      <ProductSectionRow
-        id="new-arrivals"
-        eyebrow="Just In"
-        title={newArrivalsTitle}
-        items={newArrivals}
-      />
+      {/* Row 1: New Arrivals (if present) */}
+      {newArrivalsRow && (
+        <ProductSectionRow
+          id={newArrivalsRow.key}
+          eyebrow={newArrivalsRow.eyebrow}
+          title={newArrivalsRow.title}
+          items={newArrivalsRow.items}
+        />
+      )}
 
       {/* Promo banners: between New Arrivals and Best Sellers */}
       {promoBanners.length > 0 && (
@@ -302,24 +307,19 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Row 2: Best Sellers */}
-      <ProductSectionRow
-        id="best-sellers"
-        eyebrow="Top Rated"
-        title={bestSellersTitle}
-        items={bestSellers}
-      />
-
-      {/* Row 3: Featured Products */}
-      <ProductSectionRow
-        id="featured"
-        eyebrow="Hand Picked"
-        title={featuredTitle}
-        items={featured}
-      />
+      {/* Remaining product section rows in declared order (Best Sellers, Featured, etc.) */}
+      {otherRows.map((row) => (
+        <ProductSectionRow
+          key={row.key}
+          id={row.key}
+          eyebrow={row.eyebrow}
+          title={row.title}
+          items={row.items}
+        />
+      ))}
 
       {/* "Shop all products" button under the last row */}
-      {hasAnyProducts && (
+      {rows.length > 0 && (
         <div className="container" style={{ textAlign: 'center', marginTop: '2.5rem', marginBottom: '3.5rem' }}>
           <Link className="btn btn--dark btn--wide" href="/shop">
             Shop all products <Arrow size={13} />
