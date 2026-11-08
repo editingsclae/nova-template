@@ -36,6 +36,8 @@ const CHK = (
   </svg>
 );
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+
 const RULES = [
   { t: '8+ characters', ok: (v) => v.length >= 8 },
   { t: 'Upper & lower', ok: (v) => /[a-z]/.test(v) && /[A-Z]/.test(v) },

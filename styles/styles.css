@@ -175,6 +175,8 @@ img{display:block;max-width:100%}
 .prod__cart:focus-visible{outline:2px solid #1b1a18;outline-offset:3px}
 .prod__cart:disabled{background:#e6e1d9;color:#a29b91;box-shadow:none;transform:none;cursor:default}
 .prod__cartlabel{display:inline}
+.prod__cart--opt{padding:0 14px;background:#fbfaf8;color:#1b1a18;border:1px solid var(--line);box-shadow:none}
+.prod__cart--opt:hover{background:#1b1a18;color:#fff;border-color:#1b1a18}
 
 /* Home Best Sellers only — shop.html and product.html keep the compact card.
    Uncropped shoe (the source already fills ~91% of its width) and a two-column

@@ -113,7 +113,7 @@ function ProductSectionRow({ id, eyebrow, title, items }) {
 
       <div className="grid4">
         {items.map((p) => (
-          <ProductCard p={p} key={p.id} />
+          <ProductCard p={p} key={p.id} variant="home" />
         ))}
       </div>
     </section>
