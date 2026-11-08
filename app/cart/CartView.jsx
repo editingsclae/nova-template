@@ -92,7 +92,11 @@ export default function CartView() {
                     : '/images/' + l.img + '.png';
 
                   return (
-                    <div className={'citem' + (l.stock ? '' : ' citem--out')} key={l.lineId}>
+                    <div
+                      className={'citem' + (l.stock ? '' : ' citem--out')}
+                      key={l.lineId}
+                      style={{ opacity: l.removing ? 0.45 : 1, transition: 'opacity 0.2s ease' }}
+                    >
                       <div className="citem__media">
                         <img src={imgSrc || '/images/hero-shoe.png'} alt={l.name} />
                       </div>
@@ -113,6 +117,7 @@ export default function CartView() {
                             className="citem__rm"
                             type="button"
                             data-name={l.name}
+                            disabled={l.removing}
                             onClick={() => remove(l.lineId)}
                           >
                             Remove
@@ -132,7 +137,7 @@ export default function CartView() {
                             <button
                               type="button"
                               aria-label="Decrease quantity"
-                              disabled={l.qty <= 1}
+                              disabled={l.removing || l.qty <= 1}
                               onClick={() => setQty(l.lineId, l.qty - 1)}
                             >
                               −
@@ -141,7 +146,7 @@ export default function CartView() {
                             <button
                               type="button"
                               aria-label="Increase quantity"
-                              disabled={l.qty >= MAX_QTY}
+                              disabled={l.removing || l.qty >= MAX_QTY}
                               onClick={() => setQty(l.lineId, l.qty + 1)}
                             >
                               +

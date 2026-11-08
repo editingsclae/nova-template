@@ -32,6 +32,7 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState(null);
   const [ready, setReady] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [removingLines, setRemovingLines] = useState({});
   const [lineErrors, setLineErrors] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const returnFocus = useRef(null);
@@ -137,41 +138,71 @@ export function CartProvider({ children }) {
     [ensureCart]
   );
 
-  // Update line item quantity
-  const setQty = useCallback(
-    async (lineId, quantity) => {
-      if (!cart || !lineId) return;
+  // Remove line item
+  const remove = useCallback(
+    async (lineId) => {
+      const activeCart = cartRef.current;
+      if (!activeCart || !lineId) return;
+      if (removingLines[lineId]) return;
+
+      setRemovingLines((prev) => ({ ...prev, [lineId]: true }));
       setLineErrors((prev) => {
         const next = { ...prev };
         delete next[lineId];
         return next;
       });
 
-      const nextQty = Math.max(1, Math.min(MAX_QTY, quantity));
       try {
-        const updated = await updateCartLine(cart.id, lineId, nextQty);
-        if (updated) setCart(updated);
+        const updated = await removeCartLine(activeCart.id, lineId);
+        if (updated) {
+          cartRef.current = updated;
+          setCart(updated);
+        }
+        return updated;
+      } catch (err) {
+        console.error('[cart] Remove error:', err);
+        const msg = err?.data?.message || err?.message || 'Could not remove item from cart';
+        setLineErrors((prev) => ({ ...prev, [lineId]: msg }));
+      } finally {
+        setRemovingLines((prev) => {
+          const next = { ...prev };
+          delete next[lineId];
+          return next;
+        });
+      }
+    },
+    [removingLines]
+  );
+
+  // Update line item quantity
+  const setQty = useCallback(
+    async (lineId, quantity) => {
+      const activeCart = cartRef.current;
+      if (!activeCart || !lineId) return;
+      if (quantity <= 0) {
+        return await remove(lineId);
+      }
+      setLineErrors((prev) => {
+        const next = { ...prev };
+        delete next[lineId];
+        return next;
+      });
+
+      const nextQty = Math.min(MAX_QTY, quantity);
+      try {
+        const updated = await updateCartLine(activeCart.id, lineId, nextQty);
+        if (updated) {
+          cartRef.current = updated;
+          setCart(updated);
+        }
+        return updated;
       } catch (err) {
         console.error('[cart] Update qty error:', err);
         const msg = err?.data?.message || err?.message || 'Quantity could not be updated';
         setLineErrors((prev) => ({ ...prev, [lineId]: msg }));
       }
     },
-    [cart]
-  );
-
-  // Remove line item
-  const remove = useCallback(
-    async (lineId) => {
-      if (!cart || !lineId) return;
-      try {
-        const updated = await removeCartLine(cart.id, lineId);
-        if (updated) setCart(updated);
-      } catch (err) {
-        console.error('[cart] Remove error:', err);
-      }
-    },
-    [cart]
+    [remove]
   );
 
   // Set shipping method
@@ -230,10 +261,11 @@ export function CartProvider({ children }) {
         qty: item.quantity,
         line: totalLine,
         stock: (variant?.inventory_quantity ?? 1) > 0,
+        removing: Boolean(removingLines[item.id]),
         error: lineErrors[item.id] || lineErrors[item.variant_id] || null,
       };
     });
-  }, [cart, lineErrors]);
+  }, [cart, lineErrors, removingLines]);
 
   const count = useMemo(() => {
     return lines.reduce((total, l) => total + l.qty, 0);

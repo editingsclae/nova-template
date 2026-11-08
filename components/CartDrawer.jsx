@@ -77,7 +77,11 @@ export default function CartDrawer() {
                   : '/images/' + l.img + '.png';
 
                 return (
-                  <div className={'dline' + (l.stock ? '' : ' dline--out')} key={l.lineId}>
+                  <div
+                    className={'dline' + (l.stock ? '' : ' dline--out')}
+                    key={l.lineId}
+                    style={{ opacity: l.removing ? 0.45 : 1, transition: 'opacity 0.2s ease' }}
+                  >
                     <div className="dline__media">
                       <img src={imgSrc || '/images/hero-shoe.png'} alt={l.name} />
                     </div>
@@ -91,9 +95,23 @@ export default function CartDrawer() {
                         <p className="dline__meta">{cleanVariantTitle(l.variantTitle)}</p>
                       ) : null}
                       <div className="qty qty--sm">
-                        <button type="button" aria-label="Decrease quantity" disabled={l.qty <= 1} onClick={() => setQty(l.lineId, l.qty - 1)}>&minus;</button>
+                        <button
+                          type="button"
+                          aria-label="Decrease quantity"
+                          disabled={l.removing || l.qty <= 1}
+                          onClick={() => setQty(l.lineId, l.qty - 1)}
+                        >
+                          &minus;
+                        </button>
                         <span aria-live="polite">{l.qty}</span>
-                        <button type="button" aria-label="Increase quantity" disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.lineId, l.qty + 1)}>+</button>
+                        <button
+                          type="button"
+                          aria-label="Increase quantity"
+                          disabled={l.removing || l.qty >= MAX_QTY}
+                          onClick={() => setQty(l.lineId, l.qty + 1)}
+                        >
+                          +
+                        </button>
                       </div>
                       {l.error && (
                         <p className="err-hint">
@@ -103,7 +121,14 @@ export default function CartDrawer() {
                     </div>
                     <div className="dline__side">
                       <p className="dline__price">{formatPrice(l.line, curr)}</p>
-                      <button className="dline__rm" type="button" onClick={() => remove(l.lineId)}>Remove</button>
+                      <button
+                        className="dline__rm"
+                        type="button"
+                        disabled={l.removing}
+                        onClick={() => remove(l.lineId)}
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
                 );
