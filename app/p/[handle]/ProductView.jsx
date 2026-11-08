@@ -33,6 +33,9 @@ export default function ProductView({ product, rawProduct, related = [], searchP
   const [sheetOpen, setSheetOpen] = useState(false);
   const [acc, setAcc] = useState([true, false]);
   const [msg, setMsg] = useState(null);
+  const [isErrMsg, setIsErrMsg] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   const stage = useRef(null);
   const zoomBtn = useRef(null);
@@ -159,41 +162,66 @@ export default function ProductView({ product, rawProduct, related = [], searchP
   };
   const onLeave = () => stage.current?.classList.remove('is-zoom');
 
-  const say = (node) => {
+  const say = (node, isErr = false) => {
     clearTimeout(msgTimer.current);
     setMsg(node);
-    msgTimer.current = setTimeout(() => setMsg(null), 5000);
+    setIsErrMsg(isErr);
+    msgTimer.current = setTimeout(() => {
+      setMsg(null);
+      setIsErrMsg(false);
+    }, 5000);
   };
 
-  const onAdd = () => {
-    if (!chosenVariant || !isVariantInStock) return;
-    add(product.id, chosenVariant.id, qty, {
-      variantTitle: chosenVariant.title !== 'Default' ? chosenVariant.title : '',
-      price: priceAmount,
-      name: product.name,
-      img: product.img,
-    });
-    openDrawer(addBtn.current);
-    say(
-      <>
-        <Tick /> Added {product.name}
-        {chosenVariant.title && chosenVariant.title !== 'Default'
-          ? ` (${chosenVariant.title})`
-          : ''}{' '}
-        · {qty} {qty === 1 ? 'pair' : 'pairs'} to your cart.
-      </>
-    );
+  const onAdd = async () => {
+    if (!chosenVariant || !isVariantInStock || adding || buying) return;
+    const trigger = addBtn.current;
+    setAdding(true);
+    try {
+      await add(product.id, chosenVariant.id, qty, {
+        variantTitle: chosenVariant.title !== 'Default' ? chosenVariant.title : '',
+        price: priceAmount,
+        name: product.name,
+        img: product.img,
+      });
+      openDrawer(trigger);
+      say(
+        <>
+          <Tick /> Added {product.name}
+          {chosenVariant.title && chosenVariant.title !== 'Default'
+            ? ` (${chosenVariant.title})`
+            : ''}{' '}
+          · {qty} {qty === 1 ? 'pair' : 'pairs'} to your cart.
+        </>
+      );
+    } catch (err) {
+      console.error('[pdp] Add to cart error:', err);
+      const errorMsg =
+        err?.data?.message || err?.message || 'Could not add to cart. Please try again.';
+      say(errorMsg, true);
+    } finally {
+      setAdding(false);
+    }
   };
 
-  const onBuy = () => {
-    if (!chosenVariant || !isVariantInStock) return;
-    add(product.id, chosenVariant.id, qty, {
-      variantTitle: chosenVariant.title !== 'Default' ? chosenVariant.title : '',
-      price: priceAmount,
-      name: product.name,
-      img: product.img,
-    });
-    router.push('/checkout');
+  const onBuy = async () => {
+    if (!chosenVariant || !isVariantInStock || adding || buying) return;
+    setBuying(true);
+    try {
+      await add(product.id, chosenVariant.id, qty, {
+        variantTitle: chosenVariant.title !== 'Default' ? chosenVariant.title : '',
+        price: priceAmount,
+        name: product.name,
+        img: product.img,
+      });
+      router.push('/checkout');
+    } catch (err) {
+      console.error('[pdp] Buy it now error:', err);
+      const errorMsg =
+        err?.data?.message || err?.message || 'Could not proceed to checkout. Please try again.';
+      say(errorMsg, true);
+    } finally {
+      setBuying(false);
+    }
   };
 
   const currentFrameSrc = images[Math.min(fi, images.length - 1)];
@@ -357,21 +385,29 @@ export default function ProductView({ product, rawProduct, related = [], searchP
               className="btn btn--dark btn--block"
               type="button"
               ref={addBtn}
-              disabled={!isVariantInStock}
+              disabled={!isVariantInStock || adding || buying}
               onClick={onAdd}
             >
-              {isVariantInStock ? 'Add to cart' : 'Sold out'}
+              {!isVariantInStock
+                ? 'Sold out'
+                : adding
+                ? 'Adding…'
+                : 'Add to cart'}
             </button>
             <button
               className="btn btn--ghost btn--block"
               type="button"
-              disabled={!isVariantInStock}
+              disabled={!isVariantInStock || adding || buying}
               onClick={onBuy}
             >
-              {isVariantInStock ? 'Buy it now' : 'Sold out'}
+              {!isVariantInStock
+                ? 'Sold out'
+                : buying
+                ? 'Proceeding…'
+                : 'Buy it now'}
             </button>
           </div>
-          <p className="pdp__msg" role="status">{msg}</p>
+          <p className={'pdp__msg' + (isErrMsg ? ' pdp__msg--err' : '')} role="status">{msg}</p>
 
           <div className="codbox pdp__cod">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6.5h11v10H2zM13 10h5l3 3v3.5h-8" /><circle cx="6" cy="18.5" r="1.8" /><circle cx="17" cy="18.5" r="1.8" /></svg>

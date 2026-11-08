@@ -31,9 +31,12 @@ const CartCtx = createContext(null);
 export function CartProvider({ children }) {
   const [cart, setCart] = useState(null);
   const [ready, setReady] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [lineErrors, setLineErrors] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const returnFocus = useRef(null);
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
 
   // Load existing cart from backend on mount
   const loadCart = useCallback(async () => {
@@ -48,8 +51,10 @@ export function CartProvider({ children }) {
       // If cart is already completed or not found, discard the stored id
       if (!fetched || fetched.completed_at) {
         localStorage.removeItem(CART_ID_KEY);
+        cartRef.current = null;
         setCart(null);
       } else {
+        cartRef.current = fetched;
         setCart(fetched);
       }
     } catch (e) {
@@ -57,6 +62,7 @@ export function CartProvider({ children }) {
       try {
         localStorage.removeItem(CART_ID_KEY);
       } catch (err) {}
+      cartRef.current = null;
       setCart(null);
     } finally {
       setReady(true);
@@ -69,39 +75,53 @@ export function CartProvider({ children }) {
 
   // Ensure cart exists on backend before mutations
   const ensureCart = useCallback(async () => {
-    if (cart && cart.id && !cart.completed_at) return cart;
+    const current = cartRef.current;
+    if (current && current.id && !current.completed_at) return current;
     const storedId = typeof window !== 'undefined' ? localStorage.getItem(CART_ID_KEY) : null;
     if (storedId) {
+      if (current && current.id === storedId && !current.completed_at) {
+        return current;
+      }
       try {
         const fetched = await getCart(storedId);
         if (fetched && !fetched.completed_at) {
+          cartRef.current = fetched;
           setCart(fetched);
           return fetched;
         }
-      } catch (e) {}
+      } catch (e) {
+        try {
+          localStorage.removeItem(CART_ID_KEY);
+        } catch (err) {}
+      }
     }
     const newCart = await createCart();
     if (newCart?.id) {
       try {
         localStorage.setItem(CART_ID_KEY, newCart.id);
       } catch (e) {}
+      cartRef.current = newCart;
       setCart(newCart);
       return newCart;
     }
     throw new Error('Unable to initialize cart');
-  }, [cart]);
+  }, []);
 
   // Add line item
   const add = useCallback(
     async (productId, variantId, qty = 1, meta = {}) => {
       setLineErrors({});
+      setAdding(true);
       try {
         const activeCart = await ensureCart();
         const updated = await addToCart(activeCart.id, {
           variantId,
           quantity: Math.min(MAX_QTY, Math.max(1, qty)),
         });
-        if (updated) setCart(updated);
+        if (updated) {
+          cartRef.current = updated;
+          setCart(updated);
+        }
         return updated;
       } catch (err) {
         console.error('[cart] Add error:', err);
@@ -110,6 +130,8 @@ export function CartProvider({ children }) {
           setLineErrors((prev) => ({ ...prev, [variantId]: msg }));
         }
         throw err;
+      } finally {
+        setAdding(false);
       }
     },
     [ensureCart]
@@ -257,6 +279,7 @@ export function CartProvider({ children }) {
     cart,
     cartId: cart?.id || null,
     ready,
+    adding,
     lines,
     count,
     subtotal,

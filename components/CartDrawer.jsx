@@ -7,7 +7,7 @@ import { productUrl } from '@/lib/nova';
 import { Truck, X } from './icons';
 
 export default function CartDrawer() {
-  const { lines, count, subtotal, totals, setQty, remove, drawerOpen, closeDrawer, MAX_QTY } = useCart();
+  const { lines, count, subtotal, totals, setQty, remove, drawerOpen, closeDrawer, MAX_QTY, adding, ready } = useCart();
   const closeBtn = useRef(null);
   const panel = useRef(null);
 
@@ -43,16 +43,24 @@ export default function CartDrawer() {
         </header>
 
         {lines.length === 0 ? (
-          <div className="drawer__body drawer__body--empty">
-            <div className="dempty">
-              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9.5 8a2.5 2.5 0 0 1 5 0" />
-              </svg>
-              <h3>Your cart is empty</h3>
-              <p>Add a pair and they&rsquo;ll show up here.</p>
-              <Link className="btn btn--dark" href="/shop" onClick={closeDrawer}>Start shopping</Link>
+          adding || !ready ? (
+            <div className="drawer__body drawer__body--empty">
+              <div className="dempty">
+                <p style={{ color: 'var(--muted, #666)' }}>Updating your cart…</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="drawer__body drawer__body--empty">
+              <div className="dempty">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9.5 8a2.5 2.5 0 0 1 5 0" />
+                </svg>
+                <h3>Your cart is empty</h3>
+                <p>Add a pair and they&rsquo;ll show up here.</p>
+                <Link className="btn btn--dark" href="/shop" onClick={closeDrawer}>Start shopping</Link>
+              </div>
+            </div>
+          )
         ) : (
           <>
             <div className="drawer__ship">
