@@ -58,7 +58,7 @@ To ensure consistency between what the merchant portal configures and what the s
 export const CATEGORY_TILE_PLACES = 4;
 
 export const LAYOUT = {
-  promo_banners: 2,
+  promo_banners: 3,
   sections: [
     { key: 'new_arrivals', count: 8 },
     { key: 'best_sellers', count: 4 },
@@ -72,7 +72,7 @@ export const LAYOUT = {
 2. **Never Draw More Than Declared:** The page never draws more than `LAYOUT.promo_banners` promo banners (`banners.slice(0, LAYOUT.promo_banners)`), and only renders sections defined in `LAYOUT.sections`.
 3. **No Empty Rows:** When product sections are declared, sections with 0 products or turned off by the merchant are never rendered, and rows are never artificially backfilled.
 4. **Server Instrumentation:** When `STOREFRONT_LAYOUT_KEY` is present, `instrumentation.js` sends the layout declaration to the backend on startup, logging:
-   `[layout] Declared 2 promo banner places and 3 product sections.`
+   `[layout] Declared 3 promo banner places and 3 product sections.`
 
 ## Architecture & Features
 

@@ -15,7 +15,12 @@ import {
   cleanCategoryHandle,
 } from '@/lib/medusa';
 import { mapProduct, mapProducts } from '@/lib/product-view';
-import { LAYOUT, CATEGORY_TILE_PLACES, visibleSections } from '@/lib/declare-layout';
+import {
+  LAYOUT,
+  CATEGORY_TILE_PLACES,
+  visibleSections,
+  visiblePromoBanners,
+} from '@/lib/declare-layout';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -77,11 +82,7 @@ const FEATURES = [
   },
 ];
 
-const CALLOUTS = [
-  { ax: 1470, ay: 140, dx: 1780, dy: 150, label: 'Breathable Knit' },
-  { ax: 1470, ay: 300, dx: 1780, dy: 330, label: 'Responsive Cushioning' },
-  { ax: 1330, ay: 470, dx: 1780, dy: 520, label: 'Durable Outsole' },
-];
+
 
 function bannerHref(link) {
   if (!link || link.type === 'none') return null;
@@ -165,19 +166,19 @@ export default async function HomePage() {
 
   const tiles = backendTiles.length > 0 ? backendTiles : fallbackTiles;
 
-  // 3. Promo banners (up to LAYOUT.promo_banners = 2)
-  const promoBanners = (storefront?.promo_banners || [])
-    .filter((b) => b && b.enabled !== false)
-    .slice(0, LAYOUT.promo_banners)
-    .map((b) => ({
-      id: b.id,
-      img: b.image_url,
-      label: b.label || '',
-      title: b.title || '',
-      text: b.text || '',
-      button: b.button_label || '',
-      href: bannerHref(b.link) || '/shop',
-    }));
+  // 3. Promo banners (up to LAYOUT.promo_banners = 3)
+  const promoBanners = visiblePromoBanners(storefront?.promo_banners).map((b) => ({
+    id: b.id,
+    img: b.image_url,
+    label: b.label || '',
+    title: b.title || '',
+    text: b.text || '',
+    button: b.button_label || '',
+    href: bannerHref(b.link) || '/shop',
+  }));
+
+  const promoBannersRow = promoBanners.slice(0, 2);
+  const thirdPromoBanner = promoBanners[2] || null;
 
   // 4. Product sections cut with visibleSections
   const defaultEyebrows = {
@@ -280,9 +281,9 @@ export default async function HomePage() {
       )}
 
       {/* Promo banners: between New Arrivals and Best Sellers */}
-      {promoBanners.length > 0 && (
+      {promoBannersRow.length > 0 && (
         <section className="banners" aria-label="Featured promotions">
-          {promoBanners.map((b) => (
+          {promoBannersRow.map((b) => (
             <Link className="banner" href={b.href} key={b.id || b.img}>
               <img
                 className="banner__img"
@@ -354,54 +355,39 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="tech" id="tech">
-        <div className="tech__panel">
-          <img
-            className="tech__img"
-            src="/images/promo3.png"
-            alt="Sneaker outsole detail"
-            width="2103"
-            height="748"
-            loading="lazy"
-            decoding="async"
-          />
-          <span className="tech__scrim" aria-hidden="true" />
-          <svg
-            className="tech__leads"
-            viewBox="0 0 2103 748"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            focusable="false"
-          >
-            {CALLOUTS.map((c) => (
-              <g key={c.label}>
-                <line x1={c.ax} y1={c.ay} x2={c.dx} y2={c.dy} />
-                <circle cx={c.ax} cy={c.ay} r="4" />
-              </g>
-            ))}
-          </svg>
-          <ul className="callouts">
-            {CALLOUTS.map((c) => (
-              <li
-                style={{ '--y': ((c.dy / 748) * 100).toFixed(2) + '%' }}
-                key={c.label}
-              >
-                {c.label}
-              </li>
-            ))}
-          </ul>
-          <div className="tech__copy">
-            <p className="eyebrow eyebrow--dark">Our Technology</p>
-            <h2>Engineered<br />for All-Day Comfort</h2>
-            <p className="tech__lede">
-              Advanced cushioning, breathable materials and lightweight design &mdash; so you can go further in every step.
-            </p>
-            <Link className="btn btn--light" href="/shop">
-              Learn More <Arrow size={13} />
-            </Link>
+      {/* Third promo banner: replaces static tech block */}
+      {thirdPromoBanner && (
+        <section className="tech" id="tech">
+          <div className="tech__panel">
+            {thirdPromoBanner.img ? (
+              <img
+                className="tech__img"
+                src={thirdPromoBanner.img}
+                alt=""
+                width="2103"
+                height="748"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : null}
+            <span className="tech__scrim" aria-hidden="true" />
+            <div className="tech__copy">
+              {thirdPromoBanner.label ? (
+                <p className="eyebrow eyebrow--dark">{thirdPromoBanner.label}</p>
+              ) : null}
+              {thirdPromoBanner.title ? <h2>{thirdPromoBanner.title}</h2> : null}
+              {thirdPromoBanner.text ? (
+                <p className="tech__lede">{thirdPromoBanner.text}</p>
+              ) : null}
+              {thirdPromoBanner.button ? (
+                <Link className="btn btn--light" href={thirdPromoBanner.href}>
+                  {thirdPromoBanner.button} <Arrow size={13} />
+                </Link>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <SiteFooter />
     </>
