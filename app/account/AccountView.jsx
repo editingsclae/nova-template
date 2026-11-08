@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { Chev } from '@/components/icons';
+import { useCart } from '@/lib/cart';
 import {
   getCustomer,
   getCustomerOrders,
@@ -51,6 +52,8 @@ const Clock = () => (
 );
 
 function OrderDetail({ orderId, token }) {
+  const router = useRouter();
+  const { clear, closeDrawer } = useCart();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,6 +70,15 @@ function OrderDetail({ orderId, token }) {
       setOrder(data);
     } catch (err) {
       console.error('[order-detail] Fetch error:', err);
+      if (err?.status === 401) {
+        try {
+          localStorage.removeItem('medusa_token');
+        } catch (e) {}
+        closeDrawer();
+        clear();
+        router.push('/account/login');
+        return;
+      }
       setError(err?.message || 'Could not load order details.');
     } finally {
       setLoading(false);
@@ -243,6 +255,7 @@ function OrderDetail({ orderId, token }) {
 
 export default function AccountView() {
   const router = useRouter();
+  const { clear, closeDrawer } = useCart();
   const [customer, setCustomer] = useState(null);
   const [token, setToken] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -299,6 +312,8 @@ export default function AccountView() {
       .then(async ([cust, orderList, vInfo]) => {
         if (!cust) {
           localStorage.removeItem('medusa_token');
+          closeDrawer();
+          clear();
           router.push('/account/login');
           return;
         }
@@ -338,6 +353,8 @@ export default function AccountView() {
       .catch((err) => {
         console.error('[account] Load error:', err);
         localStorage.removeItem('medusa_token');
+        closeDrawer();
+        clear();
         router.push('/account/login');
       })
       .finally(() => {
@@ -387,6 +404,15 @@ export default function AccountView() {
       } catch (err) {}
     } catch (err) {
       console.error('[verify] Confirm error:', err);
+      if (err?.status === 401) {
+        try {
+          localStorage.removeItem('medusa_token');
+        } catch (e) {}
+        closeDrawer();
+        clear();
+        router.push('/account/login');
+        return;
+      }
       const msg = err?.data?.message || err?.message || 'That code is not right or has expired.';
       setVerifyError(msg);
     } finally {
@@ -411,6 +437,15 @@ export default function AccountView() {
       }
     } catch (err) {
       console.error('[verify] Resend error:', err);
+      if (err?.status === 401) {
+        try {
+          localStorage.removeItem('medusa_token');
+        } catch (e) {}
+        closeDrawer();
+        clear();
+        router.push('/account/login');
+        return;
+      }
       const msg = err?.data?.message || err?.message || 'Could not send verification code.';
       setVerifyError(msg);
     } finally {
@@ -427,6 +462,8 @@ export default function AccountView() {
       localStorage.removeItem('nova.remembered');
       document.cookie = 'medusa_customer_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } catch (e) {}
+    closeDrawer();
+    clear();
     router.push('/account/login');
   };
 

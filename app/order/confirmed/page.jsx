@@ -83,7 +83,7 @@ function ConfirmedSkeleton() {
 function ConfirmedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('id');
-  const { clear } = useCart();
+  const { clear, closeDrawer } = useCart();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -110,12 +110,19 @@ function ConfirmedContent() {
       })
       .catch((e) => {
         console.error('Failed to load order:', e);
+        if (e?.status === 401) {
+          try {
+            localStorage.removeItem('medusa_token');
+          } catch (err) {}
+          closeDrawer?.();
+          clear();
+        }
         setError('Could not load order details.');
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [orderId]);
+  }, [orderId, clear, closeDrawer]);
 
   if (loading) {
     return <ConfirmedSkeleton />;

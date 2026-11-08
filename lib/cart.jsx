@@ -226,6 +226,7 @@ export function CartProvider({ children }) {
     try {
       localStorage.removeItem(CART_ID_KEY);
     } catch (e) {}
+    cartRef.current = null;
     setCart(null);
     setLineErrors({});
   }, []);
