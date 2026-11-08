@@ -20,6 +20,7 @@ import {
   updateCartLine,
   removeCartLine,
   addShippingMethod,
+  cleanVariantTitle,
 } from './medusa';
 
 export const CART_ID_KEY = 'medusa_cart_id';
@@ -182,12 +183,7 @@ export function CartProvider({ children }) {
 
     return cart.items.map((item, idx) => {
       const variant = item.variant;
-      const vTitle =
-        item.variant_title && item.variant_title !== 'Default'
-          ? item.variant_title
-          : variant?.title && variant.title !== 'Default'
-          ? variant.title
-          : '';
+      const vTitle = cleanVariantTitle(item.variant_title || variant?.title);
 
       const pTitle = item.product_title || item.title || 'Sneaker';
       const pHandle = item.product_handle || variant?.product?.handle || '';

@@ -6,7 +6,7 @@ import { Suspense, useEffect, useState } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { TickPlain } from '@/components/icons';
-import { getOrder, formatPrice } from '@/lib/medusa';
+import { getOrder, formatPrice, cleanVariantTitle, countryName } from '@/lib/medusa';
 
 function ConfirmedContent() {
   const searchParams = useSearchParams();
@@ -95,11 +95,11 @@ function ConfirmedContent() {
             <div>
               <p className="conf__k">Ship to</p>
               <p className="conf__v">
-                {addr.first_name} {addr.last_name}<br />
+                {[addr.first_name, addr.last_name].filter(Boolean).join(' ')}<br />
                 {addr.address_1}
                 {addr.address_2 ? <><br />{addr.address_2}</> : null}<br />
-                {addr.city} {addr.postal_code}<br />
-                Tunisia
+                {[addr.city, addr.postal_code].filter(Boolean).join(' ')}
+                {countryName(addr.country_code) ? <><br />{countryName(addr.country_code)}</> : null}
               </p>
             </div>
             <div>
@@ -115,7 +115,7 @@ function ConfirmedContent() {
             <div className="conf__items">
               <h2>Your items</h2>
               {order.items.map((item) => {
-                const vTitle = item.variant_title && item.variant_title !== 'Default' ? item.variant_title : '';
+                const vTitle = cleanVariantTitle(item.variant_title);
                 const itemTotal = item.total ?? (item.unit_price * item.quantity);
                 return (
                   <div className="sline" style={{ marginBottom: 14 }} key={item.id}>

@@ -6,7 +6,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { Chev } from '@/components/icons';
 import { MAX_QTY, useCart } from '@/lib/cart';
-import { formatPrice } from '@/lib/medusa';
+import { formatPrice, cleanVariantTitle } from '@/lib/medusa';
 import { productUrl } from '@/lib/nova';
 
 const NOTE_KEY = 'nova.note';
@@ -105,9 +105,9 @@ export default function CartView() {
                                 {l.name}
                               </Link>
                             </h3>
-                            {l.variantTitle && (
-                              <p className="citem__sub">{l.variantTitle}</p>
-                            )}
+                            {cleanVariantTitle(l.variantTitle) ? (
+                              <p className="citem__sub">{cleanVariantTitle(l.variantTitle)}</p>
+                            ) : null}
                           </div>
                           <button
                             className="citem__rm"

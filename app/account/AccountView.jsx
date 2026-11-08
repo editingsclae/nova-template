@@ -9,11 +9,14 @@ import { Chev } from '@/components/icons';
 import {
   getCustomer,
   getCustomerOrders,
+  getOrder,
   getEmailVerification,
   sendEmailVerification,
   confirmEmailVerification,
   claimOrders,
   formatPrice,
+  cleanVariantTitle,
+  countryName,
 } from '@/lib/medusa';
 
 function dateOf(ts) {
@@ -47,24 +50,75 @@ const Clock = () => (
        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" /></svg>
 );
 
-function OrderDetail({ o }) {
-  const a = o.shipping_address || {};
-  const street = [a.address_1, a.address_2].filter(Boolean).join(', ');
-  const items = Array.isArray(o.items) ? o.items : [];
-  const currency = o.currency_code || 'tnd';
-  const shipMethod = o.shipping_methods?.[0]?.name || 'Standard Shipping';
-  const derivedStatus = getDerivedStatus(o);
+function OrderDetail({ orderId, token }) {
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const subtotal = o.item_subtotal ?? items.reduce((acc, i) => acc + (i.total ?? (i.unit_price * i.quantity)), 0);
-  const shippingTotal = o.shipping_subtotal ?? o.shipping_methods?.[0]?.amount ?? 0;
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    const authToken =
+      token ||
+      (typeof window !== 'undefined' ? localStorage.getItem('medusa_token') : null);
+    try {
+      const data = await getOrder(orderId, authToken);
+      if (!data) throw new Error('Order details not found.');
+      setOrder(data);
+    } catch (err) {
+      console.error('[order-detail] Fetch error:', err);
+      setError(err?.message || 'Could not load order details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (orderId) {
+      load();
+    }
+  }, [orderId, token]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted-2)' }}>
+        Loading order details…
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div style={{ padding: '20px 0', textAlign: 'center' }}>
+        <p style={{ color: '#b3261e', fontSize: '13px', marginBottom: 10 }}>
+          {error || 'Failed to load order details.'}
+        </p>
+        <button className="btn btn--ghost btn--sm" type="button" onClick={load}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const a = order.shipping_address || {};
+  const street = [a.address_1, a.address_2].filter(Boolean).join(', ');
+  const country = countryName(a.country_code);
+  const items = Array.isArray(order.items) ? order.items : [];
+  const currency = order.currency_code || 'tnd';
+  const shipMethod = order.shipping_methods?.[0]?.name?.trim() || '';
+  const derivedStatus = getDerivedStatus(order);
+
+  const subtotal =
+    order.item_subtotal ??
+    items.reduce((acc, i) => acc + (i.total ?? i.unit_price * i.quantity), 0);
 
   return (
     <div className="odetail__grid">
       <div className="oitems">
         <h3>Items ({items.length})</h3>
         {items.map((l, k) => {
-          const itemTotal = l.total ?? (l.unit_price * l.quantity);
-          const vTitle = l.variant_title && l.variant_title !== 'Default' ? l.variant_title : '';
+          const itemTotal = l.total ?? l.unit_price * l.quantity;
+          const vTitle = cleanVariantTitle(l.variant_title);
           return (
             <div className="oline" key={l.id || k}>
               <div className="sline__media">
@@ -86,40 +140,102 @@ function OrderDetail({ o }) {
 
       <div>
         <h3>Shipping Information</h3>
-        <address className="oaddr">
-          {a.first_name} {a.last_name}<br />
-          {street}<br />
-          {a.city}{a.postal_code ? `, ${a.postal_code}` : ''}<br />
-          Tunisia
-        </address>
+        {a.first_name || a.last_name || street || a.city || a.postal_code || country ? (
+          <address className="oaddr">
+            {a.first_name || a.last_name ? (
+              <>
+                {[a.first_name, a.last_name].filter(Boolean).join(' ')}
+                <br />
+              </>
+            ) : null}
+            {street ? (
+              <>
+                {street}
+                <br />
+              </>
+            ) : null}
+            {a.city || a.postal_code ? (
+              <>
+                {a.city}
+                {a.postal_code ? `, ${a.postal_code}` : ''}
+                {country ? <br /> : ''}
+              </>
+            ) : null}
+            {country || null}
+          </address>
+        ) : null}
         <dl className="okv">
-          <div><dt>Method</dt><dd>{shipMethod}</dd></div>
-          {a.phone && (
-            <div><dt>Phone</dt><dd><a href={'tel:' + a.phone.replace(/\D/g, '')}>{a.phone}</a></dd></div>
-          )}
+          {shipMethod ? (
+            <div>
+              <dt>Method</dt>
+              <dd>{shipMethod}</dd>
+            </div>
+          ) : null}
+          {a.phone ? (
+            <div>
+              <dt>Phone</dt>
+              <dd>
+                <a href={'tel:' + a.phone.replace(/\D/g, '')}>{a.phone}</a>
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 
       <div>
         <h3>Payment &amp; Fulfillment</h3>
         <dl className="okv">
-          <div><dt>Payment</dt><dd>Cash on delivery</dd></div>
-          <div><dt>Status</dt><dd>{derivedStatus}</dd></div>
-          <div><dt>Contact</dt><dd>{o.email ? <a href={'mailto:' + o.email}>{o.email}</a> : '—'}</dd></div>
+          <div>
+            <dt>Payment</dt>
+            <dd>Cash on delivery</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>{derivedStatus}</dd>
+          </div>
+          {order.email ? (
+            <div>
+              <dt>Contact</dt>
+              <dd>
+                <a href={'mailto:' + order.email}>{order.email}</a>
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 
       <div>
         <h3>Payment breakdown</h3>
         <div className="oledger">
-          <div className="sumrow"><span>Items:</span><b>{formatPrice(subtotal, currency)}</b></div>
-          <div className="sumrow"><span>Shipping:</span><b>{shippingTotal === 0 ? 'Free' : formatPrice(shippingTotal, currency)}</b></div>
-          {o.tax_total > 0 && (
-            <div className="sumrow"><span>Tax:</span><b>{formatPrice(o.tax_total, currency)}</b></div>
-          )}
-          <div className="sumrow sumrow--total"><span>Total:</span><b>{formatPrice(o.total, currency)}</b></div>
+          <div className="sumrow">
+            <span>Items:</span>
+            <b>{formatPrice(subtotal, currency)}</b>
+          </div>
+          {order.shipping_subtotal != null ? (
+            <div className="sumrow">
+              <span>Shipping:</span>
+              <b>
+                {order.shipping_subtotal === 0
+                  ? 'Free'
+                  : formatPrice(order.shipping_subtotal, currency)}
+              </b>
+            </div>
+          ) : null}
+          {order.tax_total != null && order.tax_total > 0 ? (
+            <div className="sumrow">
+              <span>Tax:</span>
+              <b>{formatPrice(order.tax_total, currency)}</b>
+            </div>
+          ) : null}
+          <div className="sumrow sumrow--total">
+            <span>Total:</span>
+            <b>{formatPrice(order.total, currency)}</b>
+          </div>
         </div>
-        <p className="ck__legal">Cash on delivery — hand the courier <b>{formatPrice(o.total, currency)}</b> when the parcel arrives. Nothing has been charged online.</p>
+        <p className="ck__legal">
+          Cash on delivery — hand the courier <b>{formatPrice(order.total, currency)}</b> when
+          the parcel arrives. Nothing has been charged online.
+        </p>
       </div>
     </div>
   );
@@ -128,6 +244,7 @@ function OrderDetail({ o }) {
 export default function AccountView() {
   const router = useRouter();
   const [customer, setCustomer] = useState(null);
+  const [token, setToken] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pane, setPane] = useState('profile');
@@ -172,6 +289,7 @@ export default function AccountView() {
       router.push('/account/login');
       return;
     }
+    setToken(token);
 
     Promise.all([
       getCustomer(token),
@@ -535,7 +653,7 @@ export default function AccountView() {
                           aria-label={'Order ' + displayId + ' details'}
                           hidden={open !== i}
                         >
-                          {open === i ? <OrderDetail o={o} /> : null}
+                          {open === i ? <OrderDetail orderId={o.id} token={token} /> : null}
                         </div>
                       </div>
                     );

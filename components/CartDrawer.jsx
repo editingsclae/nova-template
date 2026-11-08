@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { useCart } from '@/lib/cart';
-import { formatPrice } from '@/lib/medusa';
+import { formatPrice, cleanVariantTitle } from '@/lib/medusa';
 import { productUrl } from '@/lib/nova';
 import { Truck, X } from './icons';
 
@@ -79,9 +79,9 @@ export default function CartDrawer() {
                           {l.name}
                         </Link>
                       </h3>
-                      {l.variantTitle && (
-                        <p className="dline__meta">{l.variantTitle}</p>
-                      )}
+                      {cleanVariantTitle(l.variantTitle) ? (
+                        <p className="dline__meta">{cleanVariantTitle(l.variantTitle)}</p>
+                      ) : null}
                       <div className="qty qty--sm">
                         <button type="button" aria-label="Decrease quantity" disabled={l.qty <= 1} onClick={() => setQty(l.lineId, l.qty - 1)}>&minus;</button>
                         <span aria-live="polite">{l.qty}</span>

@@ -15,6 +15,7 @@ import {
   createPaymentCollection,
   initiatePaymentSession,
   completeCart,
+  cleanVariantTitle,
 } from '@/lib/medusa';
 
 const ADDR_KEY = 'nova.checkout.address';
@@ -710,8 +711,8 @@ export default function CheckoutView() {
                     </div>
                     <div>
                       <p className="sline__name">{l.name}</p>
-                      {l.variantTitle ? (
-                        <p className="sline__meta">{l.variantTitle}</p>
+                      {cleanVariantTitle(l.variantTitle) ? (
+                        <p className="sline__meta">{cleanVariantTitle(l.variantTitle)}</p>
                       ) : l.sub ? (
                         <p className="sline__meta">{l.sub}</p>
                       ) : null}
