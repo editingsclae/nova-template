@@ -15,9 +15,10 @@ export async function generateMetadata({ params }) {
   const p = await getProductByHandle(decode(handle)).catch(() => null);
   if (!p) return { title: 'Product' };
   const mapped = mapProduct(p);
+  const desc = p.description || mapped.sub || '';
   return {
     title: { absolute: `${mapped.name} | ${STORE_NAME}` },
-    description: `${mapped.name} — ${mapped.sub}. ${formatPrice(mapped.price, mapped.currencyCode)} with cash on delivery across Tunisia.`,
+    description: `${mapped.name}${desc ? ` — ${desc}` : ''}. ${formatPrice(mapped.price, mapped.currencyCode)} with cash on delivery across Tunisia.`,
   };
 }
 

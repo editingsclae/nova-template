@@ -9,6 +9,7 @@
   align-items:start;
   padding:14px 0 30px;
 }
+.pdp__media{min-width:0}
 
 /* ---------- gallery ---------- */
 .gal{position:relative}
@@ -130,6 +131,7 @@
   display:grid;place-items:center;transition:background .15s;
 }
 .lb__nav:hover,.lb__x:hover{background:rgba(255,255,255,.22)}
+.lb__nav--prev,.lb__nav--next{}
 .lb__x{position:absolute;top:18px;right:18px}
 .lb--sheet{background:rgba(23,22,20,.5);display:grid;place-items:center}
 .sheet{

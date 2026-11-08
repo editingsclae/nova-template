@@ -88,7 +88,7 @@ export default function CartDrawer() {
                         <button type="button" aria-label="Increase quantity" disabled={l.qty >= MAX_QTY} onClick={() => setQty(l.lineId, l.qty + 1)}>+</button>
                       </div>
                       {l.error && (
-                        <p className="err-hint" style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: 4 }}>
+                        <p className="err-hint">
                           {l.error}
                         </p>
                       )}

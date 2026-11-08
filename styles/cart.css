@@ -62,6 +62,9 @@ html.drawer-open{overflow:hidden}
 .dline__rm{font-size:11.5px;color:var(--muted-2);border-bottom:1px solid transparent}
 .dline__rm:hover{color:#b3261e;border-color:#b3261e}
 .dline--out .dline__media{filter:grayscale(1);opacity:.6}
+.qty--sm button{width:28px;height:28px;font-size:13px}
+.qty--sm span{min-width:24px;font-size:12px}
+.err-hint{font-size:11.5px;color:#b3261e;margin-top:4px}
 
 .drawer__foot{flex:none;border-top:1px solid var(--line);padding:18px 22px 22px;background:#fff}
 .drawer__row{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;color:var(--muted)}

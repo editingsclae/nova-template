@@ -85,6 +85,7 @@
 .switch__text{font-weight:500}
 
 /* ---------- results ---------- */
+.results{min-width:0}
 .results__bar{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:34px;margin-bottom:20px;flex-wrap:wrap}
 .results__count{font-size:13px;color:var(--muted)}
 .results__count strong{color:var(--ink);font-weight:600}

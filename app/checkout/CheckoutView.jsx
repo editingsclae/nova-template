@@ -56,6 +56,7 @@ export default function CheckoutView() {
   const [errs, setErrs] = useState({});
   const [bar, setBar] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   // Shipping options state
   const [shippingOptions, setShippingOptions] = useState([]);
@@ -135,7 +136,7 @@ export default function CheckoutView() {
 
   const t = useMemo(() => totals(), [totals]);
   const n = lines.reduce((a, l) => a + l.qty, 0);
-  const emptyCart = ready && count === 0;
+  const emptyCart = ready && count === 0 && !busy && !orderPlaced;
 
   const set = (k) => (e) => {
     let v = e.target.value;
@@ -305,6 +306,7 @@ export default function CheckoutView() {
       const completed = await completeCart(cartId);
 
       if (completed?.type === 'order' && completed?.order?.id) {
+        setOrderPlaced(true);
         // Save address for user convenience
         try {
           localStorage.setItem(ADDR_KEY, JSON.stringify(collect()));
@@ -684,7 +686,7 @@ export default function CheckoutView() {
               <button
                 className="btn btn--dark btn--block"
                 type="submit"
-                disabled={count === 0 || busy || !!shippingError}
+                disabled={count === 0 || busy || !!shippingError || orderPlaced}
                 data-busy="Placing order…"
               >
                 {busy ? (

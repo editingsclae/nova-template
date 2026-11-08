@@ -96,6 +96,9 @@ export default function ProductView({ product, rawProduct, related = [], searchP
   const currencyCode =
     chosenVariant?.calculated_price?.currency_code || product.currencyCode || 'TND';
 
+  const sizeOption = options.find((o) => o.title.toLowerCase() === 'size');
+  const selectedSizeVal = sizeOption ? selectedOptions[sizeOption.id] : null;
+
   const stockQty = chosenVariant?.inventory_quantity ?? 0;
   const isVariantInStock = stockQty > 0;
   const isProductSoldOut = !product.stock;
@@ -239,7 +242,7 @@ export default function ProductView({ product, rawProduct, related = [], searchP
                 t: 'Description',
                 body: (
                   <p style={{ lineHeight: 1.6, color: '#444' }}>
-                    {product.sub || product.name}
+                    {product.raw?.description || product.sub || product.name}
                   </p>
                 )
               },
@@ -379,29 +382,29 @@ export default function ProductView({ product, rawProduct, related = [], searchP
 
       {/* Related products */}
       {related.length > 0 && (
-        <section className="container best" style={{ marginTop: '4rem' }}>
+        <section className="pdp__rel">
           <div className="best__head">
             <div>
-              <p className="eyebrow">Explore More</p>
-              <h2>Related Styles</h2>
+              <p className="eyebrow">Complete the look</p>
+              <h2>Others in this family</h2>
             </div>
-            <Link className="btn btn--ghost" href="/shop">View All</Link>
+            <Link className="btn btn--ghost" href="/shop">All styles</Link>
           </div>
           <div className="grid4">
             {related.map((p) => (
-              <article className={'prod' + (p.stock ? '' : ' prod--out')} key={p.id}>
-                <div className="prod__media">
-                  {p.badge && <span className="tag">{p.badge}</span>}
-                  <img src={p.img || '/images/hero-shoe.png'} alt={p.name} loading="lazy" />
-                </div>
-                <div className="prod__body">
-                  <div className="prod__info">
-                    <h4><Link className="prod__name" href={productUrl(p.handle || p.id)}>{p.name}</Link></h4>
-                    <p className="prod__sub">{p.sub}</p>
-                    <p className="prod__price">{p.from ? 'From ' : ''}{formatPrice(p.price, p.currencyCode)}</p>
+              <Link className={'rel' + (p.stock ? '' : ' rel--out')} href={productUrl(p.handle || p.id)} key={p.id}>
+                <div className="prod">
+                  <div className="prod__media">
+                    {p.badge && <span className="tag">{p.badge}</span>}
+                    <img src={p.img || '/images/hero-shoe.png'} alt={p.name} loading="lazy" />
+                  </div>
+                  <div className="prod__body">
+                    <h4>{p.name}</h4>
+                    {p.sub && <p className="prod__sub">{p.sub}</p>}
+                    <div className="prod__row"><span className="prod__price">{p.from ? 'From ' : ''}{formatPrice(p.price, p.currencyCode)}</span></div>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </section>
@@ -409,53 +412,77 @@ export default function ProductView({ product, rawProduct, related = [], searchP
 
       {/* Lightbox */}
       {lbOpen && (
-        <div className="lightbox is-open" role="dialog" aria-modal="true" aria-label="Image lightbox" onClick={closeLb}>
-          <button className="lightbox__close" type="button" aria-label="Close full-screen image" onClick={closeLb}>×</button>
-          <div className="lightbox__stage" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="lb"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full-screen product image"
+          onClick={(e) => {
+            if (e.target.classList.contains('lb')) closeLb();
+          }}
+        >
+          <button className="lb__x" type="button" onClick={closeLb} aria-label="Close full-screen image">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+          <button className="lb__nav lb__nav--prev" type="button" aria-label="Previous image" onClick={() => showFrame(fi - 1)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m14 6-6 6 6 6" />
+            </svg>
+          </button>
+          <figure className="lb__fig">
             <img src={currentFrameSrc} alt={product.name} />
-          </div>
+          </figure>
+          <button className="lb__nav lb__nav--next" type="button" aria-label="Next image" onClick={() => showFrame(fi + 1)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m10 6 6 6-6 6" />
+            </svg>
+          </button>
         </div>
       )}
 
       {/* Size sheet */}
       {sheetOpen && (
-        <div className="sheet is-open" role="dialog" aria-modal="true" aria-label="Size guide" onClick={closeSheet}>
-          <div className="sheet__card" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="lb lb--sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Size guide"
+          onClick={(e) => {
+            if (e.target.classList.contains('lb--sheet')) closeSheet();
+          }}
+        >
+          <div className="sheet">
             <div className="sheet__head">
-              <h3>Size Guide (EU)</h3>
-              <button className="sheet__close" type="button" aria-label="Close size guide" onClick={closeSheet}>×</button>
+              <h2>EU size guide</h2>
+              <button className="drawer__x" type="button" onClick={closeSheet} aria-label="Close size guide">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <table className="sizetable" style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
+            <table className="sztable">
               <thead>
-                <tr style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                  <th style={{ padding: '8px 4px' }}>EU</th>
-                  <th style={{ padding: '8px 4px' }}>UK</th>
-                  <th style={{ padding: '8px 4px' }}>US</th>
-                  <th style={{ padding: '8px 4px' }}>CM</th>
+                <tr>
+                  <th>EU</th>
+                  <th>UK</th>
+                  <th>US</th>
+                  <th>Foot length</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  [36, 3.5, 4.5, 22.5],
-                  [37, 4, 5, 23],
-                  [38, 5, 6, 24],
-                  [39, 6, 7, 25],
-                  [40, 6.5, 7.5, 25.5],
-                  [41, 7.5, 8.5, 26.5],
-                  [42, 8, 9, 27],
-                  [43, 9, 10, 28],
-                  [44, 9.5, 10.5, 28.5],
-                  [45, 10.5, 11.5, 29.5],
-                ].map(([eu, uk, us, cm]) => (
-                  <tr key={eu} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '8px 4px', fontWeight: 600 }}>{eu}</td>
-                    <td style={{ padding: '8px 4px' }}>{uk}</td>
-                    <td style={{ padding: '8px 4px' }}>{us}</td>
-                    <td style={{ padding: '8px 4px' }}>{cm}</td>
+                {[36, 37, 38, 39, 40, 41, 42, 43, 44, 45].map((s) => (
+                  <tr className={String(s) === selectedSizeVal ? 'is-on' : ''} key={s}>
+                    <td>{s}</td>
+                    <td>{s - 35}</td>
+                    <td>{s - 33}</td>
+                    <td>{(22.2 + (s - 36) * 0.665).toFixed(1)} cm</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <p className="hint">Measure from heel to longest toe against a wall. If you land between two rows, take the larger size.</p>
           </div>
         </div>
       )}

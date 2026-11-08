@@ -4,7 +4,7 @@ import { useCart } from '@/lib/cart';
 import { Bag, Tick } from './icons';
 
 /* Card quick-add: writes the default size, flashes a confirmation, opens the drawer. */
-export default function AddToCartButton({ product, disabled = false, ...rest }) {
+export default function AddToCartButton({ product, variant = product?.singleVariant, disabled = false, ...rest }) {
   const { add, openDrawer } = useCart();
   const [added, setAdded] = useState(false);
 
@@ -17,7 +17,8 @@ export default function AddToCartButton({ product, disabled = false, ...rest }) 
       disabled={disabled}
       onClick={(e) => {
         e.preventDefault();
-        add(product.id, null, 1);
+        const variantId = variant?.id || product?.singleVariant?.id;
+        add(product.id, variantId, 1);
         setAdded(true);
         setTimeout(() => setAdded(false), 600);
         openDrawer(e.currentTarget);

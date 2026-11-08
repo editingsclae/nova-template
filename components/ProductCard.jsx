@@ -28,12 +28,16 @@ export default function ProductCard({ p }) {
         {p.sub && <p className="prod__sub">{p.sub}</p>}
         <div className="prod__row">
           <span className="prod__price">{priceDisplay}</span>
-          {showOptionsLink ? (
-            <Link className="btn btn--ghost btn--sm" href={href}>
-              Choose options
-            </Link>
+          {p.stock ? (
+            p.singleVariantInStock ? (
+              <AddToCartButton product={p} variant={p.singleVariant} aria-label={`Add ${p.name} to cart`} />
+            ) : (
+              <Link className="btn btn--ghost btn--sm" href={href}>
+                Choose options
+              </Link>
+            )
           ) : (
-            <AddToCartButton product={p} aria-label={`Add ${p.name} to cart`} disabled={!p.stock} />
+            <AddToCartButton product={p} variant={p.singleVariant} disabled aria-label={`Sold out: ${p.name}`} />
           )}
         </div>
         <p className="prod__stock">

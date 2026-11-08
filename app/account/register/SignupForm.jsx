@@ -30,8 +30,11 @@ const LOCK = (
     <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
   </svg>
 );
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+const CHK = (
+  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m5 13 4.5 4.5L19 7" />
+  </svg>
+);
 
 const RULES = [
   { t: '8+ characters', ok: (v) => v.length >= 8 },
@@ -40,6 +43,7 @@ const RULES = [
   { t: 'A symbol', ok: (v) => /[^A-Za-z0-9]/.test(v) },
 ];
 const LABELS = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'];
+const LI_TEXT = ['8+ characters', 'Upper & lowercase', 'At least one number', 'At least one symbol'];
 
 function score(v) {
   if (!v) return 0;
@@ -69,6 +73,7 @@ export default function SignupForm() {
   const [busy, setBusy] = useState(false);
 
   const s = score(pass);
+  const touch = (k, msg) => setErrs((p) => (p[k] ? { ...p, [k]: msg() } : p));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -156,11 +161,11 @@ export default function SignupForm() {
   return (
     <AuthPanel
       img="/images/hero-shoe.png"
-      quote="“The pair I've worn every single day for eight months. Still looks new.”"
-      byline={`Priya R. — verified ${STORE_NAME} customer`}
+      quote="Members get first access to drops, free returns for 30 days and early colourways."
+      byline={`The ${STORE_NAME} club — free, always`}
       back="Continue shopping"
       backHref="/"
-      eyebrow="Members"
+      eyebrow="Join us"
       title={`Create your ${STORE_NAME} account`}
       sub={
         <>
@@ -170,113 +175,120 @@ export default function SignupForm() {
     >
       <Notice bar={bar} />
 
-      <form className="auth__form" onSubmit={submit} noValidate>
-        <div className={'field' + (errs.name ? ' field--err' : '')}>
-          <label htmlFor="reg-name">Full name</label>
-          <div className="input-wrap">
-            <span className="input-icon" aria-hidden="true">{USER}</span>
-            <input
-              id="reg-name"
-              type="text"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setBar(null);
-                setErrs((p) => (p.name ? { ...p, name: e.target.value.trim() ? '' : 'Please enter your name.' } : p));
-              }}
-              placeholder="Avery Ben"
-              autoComplete="name"
-              autoFocus
-              required
-            />
+      <form onSubmit={submit} noValidate>
+        <div className="row2">
+          <div className={'field' + (errs.name ? ' field--error' : '')}>
+            <div className="field__head"><label htmlFor="name">Full name</label></div>
+            <div className="control control--icon">
+              {USER}
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                placeholder="Avery Ben"
+                value={name}
+                aria-invalid={errs.name ? 'true' : undefined}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setBar(null);
+                  touch('name', () => (e.target.value.trim() ? '' : 'Please enter your name.'));
+                }}
+              />
+            </div>
+            <Err msg={errs.name} />
           </div>
-          <Err msg={errs.name} />
+
+          <div className={'field' + (errs.email ? ' field--error' : '')}>
+            <div className="field__head"><label htmlFor="email">Email</label></div>
+            <div className="control control--icon">
+              {MAIL}
+              <input
+                id="email"
+                name="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                aria-invalid={errs.email ? 'true' : undefined}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setBar(null);
+                  touch('email', () => (!e.target.value.trim() ? 'Email is required.' : (!EMAIL_RE.test(e.target.value) ? 'Enter a valid email address.' : '')));
+                }}
+              />
+            </div>
+            <Err msg={errs.email} />
+          </div>
         </div>
 
-        <div className={'field' + (errs.email ? ' field--err' : '')}>
-          <label htmlFor="reg-email">Email address</label>
-          <div className="input-wrap">
-            <span className="input-icon" aria-hidden="true">{MAIL}</span>
+        <div className={'field' + (errs.password ? ' field--error' : '')}>
+          <div className="field__head"><label htmlFor="password">Password</label></div>
+          <div className="control control--icon">
+            {LOCK}
             <input
-              id="reg-email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setBar(null);
-              }}
-              placeholder="you@domain.com"
-              autoComplete="email"
-              required
-            />
-          </div>
-          <Err msg={errs.email} />
-        </div>
-
-        <div className={'field' + (errs.password ? ' field--err' : '')}>
-          <label htmlFor="reg-pass">Password</label>
-          <div className="input-wrap">
-            <span className="input-icon" aria-hidden="true">{LOCK}</span>
-            <input
-              id="reg-pass"
+              id="password"
+              name="password"
               type={show ? 'text' : 'password'}
+              className="has-toggle"
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
               value={pass}
+              aria-describedby="strengthMeta"
+              aria-invalid={errs.password ? 'true' : undefined}
               onChange={(e) => {
                 setPass(e.target.value);
                 setBar(null);
+                touch('password', () => (!e.target.value ? 'Password is required.' : (e.target.value.length < 8 ? 'Use at least 8 characters.' : '')));
               }}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              required
             />
             <button
+              className="pw-toggle"
               type="button"
-              className="input-eye"
-              onClick={() => setShow((v) => !v)}
               aria-label={show ? 'Hide password' : 'Show password'}
+              onClick={() => setShow(!show)}
             >
               {show ? EYE_OFF : EYE}
             </button>
           </div>
           <Err msg={errs.password} />
 
-          {pass && (
-            <div className="meter" aria-live="polite">
-              <div className="meter__bars">
-                {[0, 1, 2, 3].map((i) => (
-                  <span
-                    key={i}
-                    className={'meter__bar' + (i < s ? ' meter__bar--on' : '')}
-                    data-score={s}
-                  />
-                ))}
-              </div>
-              <span className="meter__label">{LABELS[s]}</span>
-            </div>
-          )}
+          <div className="strength" id="strengthMeta" data-score={s}>
+            <div className="strength__bars"><i /><i /><i /><i /></div>
+            <div className="strength__meta"><span>Password strength</span><b>{LABELS[s]}</b></div>
+            <ul className="strength__rules">
+              {LI_TEXT.map((t, i) => (
+                <li className={pass && RULES[i].ok(pass) ? 'met' : ''} key={t} data-rule={i}>{t}</li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className={'field' + (errs.confirm ? ' field--err' : '')}>
-          <label htmlFor="reg-confirm">Confirm password</label>
-          <div className="input-wrap">
-            <span className="input-icon" aria-hidden="true">{LOCK}</span>
+        <div className={'field' + (errs.confirm ? ' field--error' : '')}>
+          <div className="field__head"><label htmlFor="confirm">Confirm password</label></div>
+          <div className="control control--icon">
+            {LOCK}
             <input
-              id="reg-confirm"
+              id="confirm"
+              name="confirm"
               type={showConfirm ? 'text' : 'password'}
+              className="has-toggle"
+              autoComplete="new-password"
+              placeholder="Re-enter your password"
               value={confirm}
+              aria-invalid={errs.confirm ? 'true' : undefined}
               onChange={(e) => {
                 setConfirm(e.target.value);
                 setBar(null);
+                touch('confirm', () => (!e.target.value ? 'Re-enter your password.' : (e.target.value !== pass ? 'Passwords don’t match.' : '')));
               }}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              required
             />
             <button
+              className="pw-toggle"
               type="button"
-              className="input-eye"
-              onClick={() => setShowConfirm((v) => !v)}
               aria-label={showConfirm ? 'Hide password' : 'Show password'}
+              onClick={() => setShowConfirm(!showConfirm)}
             >
               {showConfirm ? EYE_OFF : EYE}
             </button>
@@ -284,20 +296,21 @@ export default function SignupForm() {
           <Err msg={errs.confirm} />
         </div>
 
-        <div className={'field field-split' + (errs.terms ? ' field--err' : '')}>
-          <label className="checkbox">
+        <div className={'field' + (errs.terms ? ' field--error' : '')}>
+          <label className="opt">
             <input
               type="checkbox"
+              id="terms"
+              name="terms"
               checked={terms}
               onChange={(e) => {
                 setTerms(e.target.checked);
                 setBar(null);
-                setErrs((p) => ({ ...p, terms: '' }));
+                if (errs.terms) setErrs((p) => ({ ...p, terms: e.target.checked ? '' : 'Please accept the terms to continue.' }));
               }}
             />
-            <span>
-              I accept the <Link href="/pages/terms" target="_blank">terms of service</Link> and <Link href="/pages/privacy" target="_blank">privacy policy</Link>.
-            </span>
+            <span className="opt__box">{CHK}</span>
+            <span>I agree to the <Link href="/pages/terms">Terms of Service</Link> and <Link href="/pages/privacy">Privacy Policy</Link>.</span>
           </label>
           <Err msg={errs.terms} />
         </div>
@@ -311,6 +324,18 @@ export default function SignupForm() {
           {busy ? <><span className="btn__spin" />Creating account…</> : 'Create account'}
         </button>
       </form>
+
+      <p className="auth__legal">By creating an account you agree that {STORE_NAME} may store your order history and size preferences to speed up checkout.</p>
+
+      <div className="auth__foot">
+        <span>Prefer to browse first?</span>
+        <Link href="/shop">
+          Open the shop
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </Link>
+      </div>
     </AuthPanel>
   );
 }

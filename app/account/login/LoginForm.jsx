@@ -168,66 +168,75 @@ export default function LoginForm() {
     >
       <Notice bar={bar} />
 
-      <form className="auth__form" onSubmit={submit} noValidate>
-        <div className={'field' + (errs.email ? ' field--err' : '')}>
-          <label htmlFor="login-email">Email address</label>
-          <div className="input-wrap">
-            <span className="input-icon" aria-hidden="true">{MAIL}</span>
+      <form onSubmit={submit} noValidate>
+        <div className={'field' + (errs.email ? ' field--error' : '')}>
+          <div className="field__head"><label htmlFor="email">Email address</label></div>
+          <div className="control control--icon">
+            {MAIL}
             <input
-              id="login-email"
+              id="email"
+              name="email"
               type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="you@example.com"
               value={email}
               onChange={typeEmail}
-              onBlur={() => setErrs((p) => ({ ...p, email: checkEmail() }))}
-              placeholder="you@domain.com"
-              autoComplete="email"
-              autoFocus
-              required
+              aria-invalid={errs.email ? 'true' : undefined}
             />
           </div>
-          {errs.email && <p className="err-hint"><ErrIcon /> {errs.email}</p>}
+          <p className="err">{errs.email ? <><ErrIcon /><span>{errs.email}</span></> : null}</p>
         </div>
 
-        <div className={'field' + (errs.password ? ' field--err' : '')}>
-          <div className="field-between">
-            <label htmlFor="login-pass">Password</label>
-            <Link className="field-link" href="/account/forgot-password">Forgot password?</Link>
+        <div className={'field' + (errs.password ? ' field--error' : '')}>
+          <div className="field__head">
+            <label htmlFor="password">Password</label>
+            <Link className="field__link" href="/account/forgot-password">Forgot password?</Link>
           </div>
-          <div className="input-wrap">
-            <span className="input-icon" aria-hidden="true">{LOCK}</span>
+          <div className="control control--icon">
+            {LOCK}
             <input
-              ref={passRef}
-              id="login-pass"
+              id="password"
+              name="password"
               type={show ? 'text' : 'password'}
+              className="has-toggle"
+              autoComplete="current-password"
+              placeholder="Enter your password"
+              ref={passRef}
               value={pass}
               onChange={typePass}
-              onBlur={() => setErrs((p) => ({ ...p, password: checkPass() }))}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
+              aria-invalid={errs.password ? 'true' : undefined}
             />
             <button
+              className="pw-toggle"
               type="button"
-              className="input-eye"
-              onClick={() => setShow((s) => !s)}
               aria-label={show ? 'Hide password' : 'Show password'}
+              onClick={() => {
+                setShow(!show);
+                passRef.current?.focus();
+              }}
             >
               {show ? EYE_OFF : EYE}
             </button>
           </div>
-          {errs.password && <p className="err-hint"><ErrIcon /> {errs.password}</p>}
+          <p className="err">{errs.password ? <><ErrIcon /><span>{errs.password}</span></> : null}</p>
         </div>
 
-        <div className="field-split">
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-            />
-            <span>Remember email</span>
-          </label>
-        </div>
+        <label className="opt" style={{ margin: '2px 0 22px' }}>
+          <input
+            type="checkbox"
+            id="remember"
+            name="remember"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+          />
+          <span className="opt__box">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m5 13 4.5 4.5L19 7" />
+            </svg>
+          </span>
+          <span>Keep me signed in on this device</span>
+        </label>
 
         <button
           className="btn btn--dark btn--block"
@@ -238,6 +247,16 @@ export default function LoginForm() {
           {busy ? <><span className="btn__spin" />Signing in…</> : 'Sign in'}
         </button>
       </form>
+
+      <div className="auth__foot">
+        <span>Need a hand?</span>
+        <Link href="/shop">
+          Browse the shop
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </Link>
+      </div>
     </AuthPanel>
   );
 }

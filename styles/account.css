@@ -41,6 +41,7 @@
 .ac__side-link:hover{color:var(--ink);border-color:var(--line)}
 
 .ac__main{display:grid;gap:20px;min-width:0}
+.ac__pane{}
 
 /* profile */
 .ac__facts{display:grid;gap:0;margin:0}
