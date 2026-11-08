@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Arrow, ChevLeft, ChevRight } from './icons';
+import { STORE_NAME } from '@/lib/medusa';
 
 const AUTOPLAY_MS = 6000;
 
@@ -40,16 +41,22 @@ export default function HeroSlider({ slides }) {
       onBlurCapture={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setPaused(false);
       }}>
-      <h1 className="sr-only">NOVA</h1>
+      <h1 className="sr-only">{STORE_NAME}</h1>
 
       {slides.map((slide, i) => {
         const active = i === index;
         const hasButton = Boolean(slide.href && slide.button);
+        const imgSrc = slide.img
+          ? slide.img.startsWith('http') || slide.img.startsWith('/')
+            ? slide.img
+            : '/images/' + slide.img + '.png'
+          : '/images/hero.png';
+
         return (
-          <article key={slide.img} className={'hero-slide' + (active ? ' is-on' : '') + (slide.tint ? ' hero-slide--' + slide.tint : '')}
+          <article key={slide.id || slide.img || i} className={'hero-slide' + (active ? ' is-on' : '') + (slide.tint ? ' hero-slide--' + slide.tint : '')}
             role="group" aria-roledescription="slide" aria-label={i + 1 + ' of ' + slides.length}
             aria-hidden={!active} inert={!active || undefined}>
-            <img className="hero-slide__img" src={'/images/' + slide.img + '.png'} alt=""
+            <img className="hero-slide__img" src={imgSrc} alt=""
               width="1934" height="813" loading={i === 0 ? 'eager' : 'lazy'}
               fetchPriority={i === 0 ? 'high' : 'low'} decoding="async" />
             <span className="hero-slide__scrim" aria-hidden="true" />
@@ -83,7 +90,7 @@ export default function HeroSlider({ slides }) {
           </div>
           <div className="hero-dots">
             {slides.map((slide, i) => (
-              <button key={slide.img} type="button" className={'hero-dot' + (i === index ? ' is-on' : '')}
+              <button key={slide.id || slide.img || i} type="button" className={'hero-dot' + (i === index ? ' is-on' : '')}
                 onClick={() => goTo(i)} aria-label={'Show slide ' + (i + 1)}
                 aria-current={i === index ? 'true' : undefined} />
             ))}
