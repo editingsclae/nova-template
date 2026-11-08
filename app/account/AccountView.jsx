@@ -1,81 +1,42 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
 import { Chev } from '@/components/icons';
-import { byId, money, productUrl } from '@/lib/nova';
+import {
+  getCustomer,
+  getCustomerOrders,
+  getEmailVerification,
+  sendEmailVerification,
+  confirmEmailVerification,
+  claimOrders,
+  formatPrice,
+} from '@/lib/medusa';
 
-const SESSION = 'nova.session';
-const ORDERS = 'nova.orders';
-const PROFILE = 'nova.account.profile';
-const REMEMBERED = 'nova.remembered';
-
-/* reference account shown when nobody has signed in on this device */
-const DEMO = { name: 'Alouini Firas', email: '979adriaens@fldubai.com', confirmed: true, confirmedAt: '12 Oct 2026' };
-
-const SEED = [{
-  number: '52',
-  placed: +new Date(2026, 10, 1, 9, 40),
-  status: 'Order placed',
-  merchant: 'ZARA',
-  payment: 'pay on delivery',
-  fulfillment: 'Order placed',
-  contact: '979adriaens@fldubai.com',
-  shipMethod: 'Aramex',
-  items: [{ id: 'air-pro', name: 'Nova Air Pro', sub: 'Everyday Comfort', img: 'prod-airpro', size: 42, qty: 1, unit: 563, line: 563 }],
-  totals: { items: 563, shipping: 10, total: 573 },
-  address: {
-    name: 'Alouini Firas', street: 'Av Monji Slim', city: 'Tunis', zip: '1000',
-    country: 'Tunisia (TN)', phone: '+21620514118'
-  }
-}];
-
-function read(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
-}
-function write(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* private mode */ }
-}
 function dateOf(ts) {
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
+
 function initialsOf(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '—';
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
 
-function normalise(o) {
-  const a = o.address || {};
-  return {
-    number: String(o.number),
-    placed: o.placed,
-    status: o.status || 'Order placed',
-    merchant: o.merchant || 'NOVA',
-    payment: o.payment || 'pay on delivery',
-    fulfillment: o.fulfillment || o.status || 'Order placed',
-    contact: o.contact || o.email || '',
-    shipMethod: o.shipMethod || 'Aramex',
-    items: (o.items || []).map((l) => {
-      const p = byId(l.id) || {};
-      return {
-        id: l.id || p.id || '',
-        name: l.name || p.name || 'Nova pair', sub: l.sub || p.sub || '',
-        img: l.img || p.img || 'prod-airpro', size: l.size, qty: l.qty,
-        unit: l.unit != null ? l.unit : (p.price || 0),
-        line: l.line != null ? l.line : (p.price || 0) * l.qty
-      };
-    }),
-    totals: o.totals || { items: 0, shipping: 0, total: 0 },
-    address: {
-      name: a.name || '', street: a.street || a.addr1 || '', addr2: a.addr2 || '',
-      city: a.city || '', zip: a.zip || '', country: a.country || 'Tunisia (TN)', phone: a.phone || ''
-    }
-  };
+function getDerivedStatus(order) {
+  if (order.status === 'canceled') return 'Canceled';
+  if (order.fulfillment_status === 'delivered') return 'Delivered';
+  if (order.fulfillment_status === 'shipped') return 'Shipped';
+  return 'Order placed';
 }
-function storedOrders() { return read(ORDERS, []).concat(SEED).map(normalise).sort((x, y) => y.placed - x.placed); }
 
 const Tick = ({ size = 13 }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
@@ -87,90 +48,192 @@ const Clock = () => (
 );
 
 function OrderDetail({ o }) {
-  const a = o.address;
-  const street = [a.street, a.addr2].filter(Boolean).join(', ');
+  const a = o.shipping_address || {};
+  const street = [a.address_1, a.address_2].filter(Boolean).join(', ');
+  const items = Array.isArray(o.items) ? o.items : [];
+  const currency = o.currency_code || 'tnd';
+  const shipMethod = o.shipping_methods?.[0]?.name || 'Standard Shipping';
+  const derivedStatus = getDerivedStatus(o);
+
+  const subtotal = o.item_subtotal ?? items.reduce((acc, i) => acc + (i.total ?? (i.unit_price * i.quantity)), 0);
+  const shippingTotal = o.shipping_subtotal ?? o.shipping_methods?.[0]?.amount ?? 0;
+
   return (
-    <>
-      <div className="odetail__grid">
-        <div className="oitems">
-          <h3>Items ({o.items.length})</h3>
-          {o.items.map((l, k) => (
-            <div className="oline" key={k}>
+    <div className="odetail__grid">
+      <div className="oitems">
+        <h3>Items ({items.length})</h3>
+        {items.map((l, k) => {
+          const itemTotal = l.total ?? (l.unit_price * l.quantity);
+          const vTitle = l.variant_title && l.variant_title !== 'Default' ? l.variant_title : '';
+          return (
+            <div className="oline" key={l.id || k}>
               <div className="sline__media">
-                <img src={'/images/' + l.img + '.png'} alt="" />
-                <span className="sline__n">{l.qty}</span>
+                <img src={l.thumbnail || '/images/hero-shoe.png'} alt="" />
+                <span className="sline__n">{l.quantity}</span>
               </div>
               <div>
-                <p className="sline__name">
-                  {l.id ? <Link className="plink" href={productUrl(l.id)}>{l.name}</Link> : l.name}
+                <p className="sline__name">{l.product_title || l.title || 'Product'}</p>
+                <p className="oline__meta">
+                  Qty: {l.quantity} • Unit: {formatPrice(l.unit_price, currency)}
+                  {vTitle ? ` • ${vTitle}` : ''}
                 </p>
-                <p className="oline__meta">Qty: {l.qty} • Unit: {money(l.unit, 1)}{l.size ? ' • EU ' + l.size : ''}</p>
               </div>
-              <p className="sline__price">{money(l.line)}</p>
+              <p className="sline__price">{formatPrice(itemTotal, currency)}</p>
             </div>
-          ))}
-        </div>
-
-        <div>
-          <h3>Shipping Information</h3>
-          <address className="oaddr">{a.name}<br />{street}<br />{a.city}, {a.zip}<br />{a.country}</address>
-          <dl className="okv">
-            <div><dt>Method</dt><dd>{o.shipMethod}</dd></div>
-            <div><dt>Phone</dt><dd><a href={'tel:' + a.phone.replace(/\D/g, '')}>{a.phone}</a></dd></div>
-          </dl>
-        </div>
-
-        <div>
-          <h3>Payment &amp; Fulfillment</h3>
-          <dl className="okv">
-            <div><dt>Merchant</dt><dd>{o.merchant}</dd></div>
-            <div><dt>Payment</dt><dd>{o.payment}</dd></div>
-            <div><dt>Fulfillment</dt><dd>{o.fulfillment}</dd></div>
-            <div><dt>Contact</dt><dd>{o.contact ? <a href={'mailto:' + o.contact}>{o.contact}</a> : '—'}</dd></div>
-          </dl>
-        </div>
-
-        <div>
-          <h3>Payment breakdown</h3>
-          <div className="oledger">
-            <div className="sumrow"><span>Items:</span><b>{money(o.totals.items)}</b></div>
-            <div className="sumrow"><span>Shipping:</span><b>{o.totals.shipping === 0 ? 'Free' : money(o.totals.shipping)}</b></div>
-            <div className="sumrow sumrow--total"><span>Total:</span><b>{money(o.totals.total)}</b></div>
-          </div>
-          <p className="ck__legal">Cash on delivery — hand the courier <b>{money(o.totals.total)}</b> when the parcel arrives. Nothing has been charged online.</p>
-        </div>
+          );
+        })}
       </div>
-    </>
+
+      <div>
+        <h3>Shipping Information</h3>
+        <address className="oaddr">
+          {a.first_name} {a.last_name}<br />
+          {street}<br />
+          {a.city}{a.postal_code ? `, ${a.postal_code}` : ''}<br />
+          Tunisia
+        </address>
+        <dl className="okv">
+          <div><dt>Method</dt><dd>{shipMethod}</dd></div>
+          {a.phone && (
+            <div><dt>Phone</dt><dd><a href={'tel:' + a.phone.replace(/\D/g, '')}>{a.phone}</a></dd></div>
+          )}
+        </dl>
+      </div>
+
+      <div>
+        <h3>Payment &amp; Fulfillment</h3>
+        <dl className="okv">
+          <div><dt>Payment</dt><dd>Cash on delivery</dd></div>
+          <div><dt>Status</dt><dd>{derivedStatus}</dd></div>
+          <div><dt>Contact</dt><dd>{o.email ? <a href={'mailto:' + o.email}>{o.email}</a> : '—'}</dd></div>
+        </dl>
+      </div>
+
+      <div>
+        <h3>Payment breakdown</h3>
+        <div className="oledger">
+          <div className="sumrow"><span>Items:</span><b>{formatPrice(subtotal, currency)}</b></div>
+          <div className="sumrow"><span>Shipping:</span><b>{shippingTotal === 0 ? 'Free' : formatPrice(shippingTotal, currency)}</b></div>
+          {o.tax_total > 0 && (
+            <div className="sumrow"><span>Tax:</span><b>{formatPrice(o.tax_total, currency)}</b></div>
+          )}
+          <div className="sumrow sumrow--total"><span>Total:</span><b>{formatPrice(o.total, currency)}</b></div>
+        </div>
+        <p className="ck__legal">Cash on delivery — hand the courier <b>{formatPrice(o.total, currency)}</b> when the parcel arrives. Nothing has been charged online.</p>
+      </div>
+    </div>
   );
 }
 
 export default function AccountView() {
   const router = useRouter();
-  const [prof, setProf] = useState(DEMO);
-  const [list, setList] = useState(() => SEED.map(normalise).sort((x, y) => y.placed - x.placed));
+  const [customer, setCustomer] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [pane, setPane] = useState('profile');
   const [open, setOpen] = useState(null);
 
-  /* localStorage is only reachable on the client, so the first paint uses the demo account */
-  useEffect(() => {
-    const saved = read(PROFILE, null);
-    const session = read(SESSION, null);
-    setProf(saved
-      ? { name: saved.name, email: saved.email, confirmed: !!saved.confirmed, confirmedAt: saved.confirmedAt }
-      : session
-        ? { name: session.name, email: session.email, confirmed: true, confirmedAt: DEMO.confirmedAt }
-        : DEMO);
-    setList(storedOrders());
+  // Email verification state (Rule 28)
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+  const [verifySuccess, setVerifySuccess] = useState('');
+  const [canResendIn, setCanResendIn] = useState(0);
 
-    const hash = (window.location.hash || '').replace('#', '');
-    if (hash.indexOf('order-') === 0) { setOpen(+hash.slice(6)); setPane('orders'); }
-    else if (hash === 'orders') setPane('orders');
-  }, []);
+  const countdownTimer = useRef(null);
+
+  const startCountdown = (sec = 60) => {
+    clearInterval(countdownTimer.current);
+    setCanResendIn(sec);
+    countdownTimer.current = setInterval(() => {
+      setCanResendIn((s) => {
+        if (s <= 1) {
+          clearInterval(countdownTimer.current);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => clearInterval(countdownTimer.current), []);
+
+  // Check auth and load customer & orders on mount
+  useEffect(() => {
+    // Rule 11: Expire legacy cookie if present
+    try {
+      document.cookie = 'medusa_customer_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    } catch (e) {}
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('medusa_token') : null;
+    if (!token) {
+      router.push('/account/login');
+      return;
+    }
+
+    Promise.all([
+      getCustomer(token),
+      getCustomerOrders(token),
+      getEmailVerification(token).catch(() => null),
+    ])
+      .then(async ([cust, orderList, vInfo]) => {
+        if (!cust) {
+          localStorage.removeItem('medusa_token');
+          router.push('/account/login');
+          return;
+        }
+
+        setCustomer(cust);
+
+        // Sort orders newest first
+        const sorted = (Array.isArray(orderList) ? orderList : []).slice().sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+        setOrders(sorted);
+
+        // Email verification status
+        if (vInfo?.verified) {
+          setIsVerified(true);
+          // Rule 18: Claim guest orders when verified
+          try {
+            await claimOrders(token);
+            const refreshed = await getCustomerOrders(token);
+            setOrders(refreshed.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+          } catch (e) {}
+        } else {
+          setIsVerified(false);
+          if (vInfo?.can_resend_in > 0) {
+            startCountdown(vInfo.can_resend_in);
+          }
+        }
+
+        const hash = (window.location.hash || '').replace('#', '');
+        if (hash.startsWith('order-')) {
+          setOpen(+hash.slice(6));
+          setPane('orders');
+        } else if (hash === 'orders') {
+          setPane('orders');
+        }
+      })
+      .catch((err) => {
+        console.error('[account] Load error:', err);
+        localStorage.removeItem('medusa_token');
+        router.push('/account/login');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [router]);
 
   const showPane = (which) => {
     setPane(which);
-    try { window.history.replaceState(null, '', '#' + which); } catch (e) { /* ignore */ }
+    try {
+      window.history.replaceState(null, '', '#' + which);
+    } catch (e) {}
   };
+
   const onTabKeys = (e) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     const next = e.target.getAttribute('data-pane') === 'profile' ? 'orders' : 'profile';
@@ -178,23 +241,92 @@ export default function AccountView() {
     document.getElementById('tab-' + next)?.focus();
   };
 
-  const confirmNow = () => {
-    write(PROFILE, { name: prof.name, email: prof.email, confirmed: true, confirmedAt: dateOf(Date.now()) });
-    setProf({ ...prof, confirmed: true, confirmedAt: dateOf(Date.now()) });
+  const handleConfirmCode = async (e) => {
+    e.preventDefault();
+    setVerifyError('');
+    setVerifySuccess('');
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('medusa_token') : null;
+    const cleanCode = verifyCode.replace(/\D/g, '');
+
+    if (!token || cleanCode.length !== 6) {
+      setVerifyError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      await confirmEmailVerification(token, cleanCode);
+      setIsVerified(true);
+      setVerifySuccess('Email confirmed successfully!');
+      setVerifyCode('');
+
+      // Rule 18: Claim orders after email confirmed
+      try {
+        await claimOrders(token);
+        const refreshed = await getCustomerOrders(token);
+        setOrders(refreshed.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+      } catch (err) {}
+    } catch (err) {
+      console.error('[verify] Confirm error:', err);
+      const msg = err?.data?.message || err?.message || 'That code is not right or has expired.';
+      setVerifyError(msg);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setVerifyError('');
+    setVerifySuccess('');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('medusa_token') : null;
+    if (!token) return;
+
+    setResending(true);
+    try {
+      const res = await sendEmailVerification(token);
+      if (res?.verified) {
+        setIsVerified(true);
+      } else {
+        startCountdown(res?.can_resend_in || 60);
+        setVerifySuccess('A new verification code has been sent to your email.');
+      }
+    } catch (err) {
+      console.error('[verify] Resend error:', err);
+      const msg = err?.data?.message || err?.message || 'Could not send verification code.';
+      setVerifyError(msg);
+    } finally {
+      setResending(false);
+    }
   };
 
   const signOut = () => {
+    // Rule 31: Logout clears saved customer token and cart
     try {
-      localStorage.removeItem(SESSION);
-      localStorage.removeItem(REMEMBERED);
-    } catch (e) { /* ignore */ }
-    router.push('/login');
+      localStorage.removeItem('medusa_token');
+      localStorage.removeItem('medusa_cart_id');
+      localStorage.removeItem('nova.session');
+      localStorage.removeItem('nova.remembered');
+      document.cookie = 'medusa_customer_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    } catch (e) {}
+    router.push('/account/login');
   };
 
-  const qtyPhrase = (items) => {
-    const n = items.reduce((a, l) => a + l.qty, 0);
-    return n === 1 ? '1 item' : n + ' items';
-  };
+  if (loading) {
+    return (
+      <div className="shop">
+        <SiteHeader />
+        <main className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+          <p style={{ color: 'var(--sub, #666)' }}>Loading your account…</p>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  const fullName = customer
+    ? [customer.first_name, customer.last_name].filter(Boolean).join(' ') || customer.email
+    : 'Member';
 
   return (
     <div className="shop">
@@ -213,26 +345,40 @@ export default function AccountView() {
         <div className="ac__layout">
           <aside className="ac__side">
             <div className="ac__who">
-              <span className="ac__avatar">{initialsOf(prof.name)}</span>
+              <span className="ac__avatar">{initialsOf(fullName)}</span>
               <div>
-                <p className="ac__who-name">{prof.name}</p>
-                <p className="ac__who-mail">{prof.email}</p>
+                <p className="ac__who-name">{fullName}</p>
+                <p className="ac__who-mail">{customer?.email}</p>
               </div>
             </div>
 
             <nav className="ac__tabs" role="tablist" aria-label="Account sections" onKeyDown={onTabKeys}>
-              <button className={'ac__tab' + (pane === 'profile' ? ' is-on' : '')} type="button" role="tab"
-                      aria-selected={pane === 'profile'} aria-controls="pane-profile" id="tab-profile" data-pane="profile"
-                      onClick={() => showPane('profile')}>
+              <button
+                className={'ac__tab' + (pane === 'profile' ? ' is-on' : '')}
+                type="button"
+                role="tab"
+                aria-selected={pane === 'profile'}
+                aria-controls="pane-profile"
+                id="tab-profile"
+                data-pane="profile"
+                onClick={() => showPane('profile')}
+              >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>
                 Profile
               </button>
-              <button className={'ac__tab' + (pane === 'orders' ? ' is-on' : '')} type="button" role="tab"
-                      aria-selected={pane === 'orders'} aria-controls="pane-orders" id="tab-orders" data-pane="orders"
-                      onClick={() => showPane('orders')}>
+              <button
+                className={'ac__tab' + (pane === 'orders' ? ' is-on' : '')}
+                type="button"
+                role="tab"
+                aria-selected={pane === 'orders'}
+                aria-controls="pane-orders"
+                id="tab-orders"
+                data-pane="orders"
+                onClick={() => showPane('orders')}
+              >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8h12l-1 12H7L6 8Z" /><path d="M9.5 8a2.5 2.5 0 0 1 5 0" /></svg>
                 My orders
-                <span className="ac__tab-n">{list.length}</span>
+                <span className="ac__tab-n">{orders.length}</span>
               </button>
             </nav>
 
@@ -246,7 +392,13 @@ export default function AccountView() {
           </aside>
 
           <div className="ac__main">
-            <section className="panel ac__pane" id="pane-profile" role="tabpanel" aria-labelledby="tab-profile" hidden={pane !== 'profile'}>
+            <section
+              className="panel ac__pane"
+              id="pane-profile"
+              role="tabpanel"
+              aria-labelledby="tab-profile"
+              hidden={pane !== 'profile'}
+            >
               <div className="panel__head">
                 <h2>Profile</h2>
               </div>
@@ -254,56 +406,154 @@ export default function AccountView() {
               <dl className="ac__facts">
                 <div className="ac__fact">
                   <dt>User full name</dt>
-                  <dd>{prof.name}<small>Shown on the delivery label and read out to the courier.</small></dd>
+                  <dd>
+                    {fullName}
+                    <small>Shown on the delivery label and read out to the courier.</small>
+                  </dd>
                 </div>
                 <div className="ac__fact">
                   <dt>Email</dt>
-                  <dd>{prof.email}<small>Order confirmations and tracking links go here.</small></dd>
+                  <dd>
+                    {customer?.email}
+                    <small>Order confirmations and tracking links go here.</small>
+                  </dd>
                 </div>
                 <div className="ac__fact">
                   <dt>Email confirmed</dt>
-                  {prof.confirmed
-                    ? <dd><span className="pill pill--ok"><Tick />Confirmed</span><small>Verified on {prof.confirmedAt}.</small></dd>
-                    : <dd>
-                        <span className="pill pill--wait"><Clock />Awaiting confirmation</span>
-                        <small>Open the link we sent to {prof.email}, or <button className="linkbtn" type="button" onClick={confirmNow}>confirm it here</button> in this demo.</small>
-                      </dd>}
+                  {isVerified ? (
+                    <dd>
+                      <span className="pill pill--ok"><Tick />Confirmed</span>
+                      <small>Your email address has been verified.</small>
+                    </dd>
+                  ) : (
+                    <dd>
+                      <span className="pill pill--wait"><Clock />Awaiting confirmation</span>
+                      <div style={{ marginTop: 14, padding: '1.25rem', background: '#f9f9f8', border: '1px solid var(--line, #e5e5e4)', borderRadius: 8, maxWidth: 420 }}>
+                        <p style={{ fontSize: '0.875rem', marginBottom: 10, color: 'var(--sub, #555)', lineHeight: 1.4 }}>
+                          Enter the 6-digit confirmation code sent to <b>{customer?.email}</b>:
+                        </p>
+                        <form onSubmit={handleConfirmCode} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            placeholder="123456"
+                            maxLength="8"
+                            value={verifyCode}
+                            onChange={(e) => setVerifyCode(e.target.value.replace(/[^\d]/g, ''))}
+                            style={{ width: 130, padding: '7px 12px', fontSize: '1rem', letterSpacing: '0.15em', fontWeight: 600, border: '1px solid #ccc', borderRadius: 6 }}
+                          />
+                          <button
+                            className="btn btn--dark"
+                            type="submit"
+                            disabled={verifying || verifyCode.trim().length !== 6}
+                            style={{ padding: '7px 16px', fontSize: '0.875rem' }}
+                          >
+                            {verifying ? 'Checking…' : 'Confirm'}
+                          </button>
+                        </form>
+                        {verifyError && (
+                          <p style={{ color: '#dc2626', fontSize: '0.8125rem', margin: '4px 0 8px' }}>
+                            {verifyError}
+                          </p>
+                        )}
+                        {verifySuccess && (
+                          <p style={{ color: '#16a34a', fontSize: '0.8125rem', margin: '4px 0 8px' }}>
+                            {verifySuccess}
+                          </p>
+                        )}
+                        <div style={{ fontSize: '0.8125rem', color: '#666', marginTop: 4 }}>
+                          {canResendIn > 0 ? (
+                            <span>Resend available in {canResendIn}s</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="linkbtn"
+                              onClick={handleResendCode}
+                              disabled={resending}
+                              style={{ textDecoration: 'underline', cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit' }}
+                            >
+                              {resending ? 'Sending…' : 'Resend code'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </dd>
+                  )}
                 </div>
               </dl>
             </section>
 
-            <section className="panel ac__pane" id="pane-orders" role="tabpanel" aria-labelledby="tab-orders" hidden={pane !== 'orders'}>
+            <section
+              className="panel ac__pane"
+              id="pane-orders"
+              role="tabpanel"
+              aria-labelledby="tab-orders"
+              hidden={pane !== 'orders'}
+            >
               <div className="panel__head">
                 <h2>My orders</h2>
-                <p className="panel__head-note">{list.length ? dateOf(list[0].placed) + ' · newest first' : ''}</p>
+                <p className="panel__head-note">
+                  {orders.length ? `${dateOf(orders[0].created_at)} · newest first` : ''}
+                </p>
               </div>
-              <div className="oorder-list">
-                {list.map((o, i) => (
-                  <div className="oorder" key={o.number}>
-                    <button className="oorder__btn" type="button" aria-expanded={open === i}
-                            aria-controls={'detail-' + i} onClick={() => setOpen(open === i ? null : i)}>
-                      <span className="oorder__no">Order #{o.number}</span>
-                      <span className="oorder__items">{dateOf(o.placed)} • {qtyPhrase(o.items)}</span>
-                      <span className="oorder__status"><span className="pill pill--ok"><Tick />{o.status}</span></span>
-                      <span className="oorder__total"><small>Total</small>{money(o.totals.total, 1)}</span>
-                      <span className="oorder__chev"><Chev size={13} /></span>
-                    </button>
-                    <div className="odetail" id={'detail-' + i} role="region"
-                         aria-label={'Order ' + o.number + ' details'} hidden={open !== i}>
-                      {open === i ? <OrderDetail o={o} /> : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="ac__noorders" hidden={list.length > 0}>
-                <h3>No orders yet</h3>
-                <p>When you place an order it appears here with its cash-on-delivery amount and courier details.</p>
-                <Link className="btn btn--dark" href="/shop">Browse the shop</Link>
-              </div>
+
+              {orders.length > 0 ? (
+                <div className="oorder-list">
+                  {orders.map((o, i) => {
+                    const displayId = o.display_id ? String(o.display_id) : o.id;
+                    const items = Array.isArray(o.items) ? o.items : [];
+                    const itemCount = items.reduce((acc, it) => acc + (it.quantity || 1), 0);
+                    const derivedStatus = getDerivedStatus(o);
+
+                    return (
+                      <div className="oorder" key={o.id || displayId}>
+                        <button
+                          className="oorder__btn"
+                          type="button"
+                          aria-expanded={open === i}
+                          aria-controls={'detail-' + i}
+                          onClick={() => setOpen(open === i ? null : i)}
+                        >
+                          <span className="oorder__no">Order #{displayId}</span>
+                          <span className="oorder__items">
+                            {dateOf(o.created_at)} • {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                          </span>
+                          <span className="oorder__status">
+                            <span className="pill pill--ok"><Tick />{derivedStatus}</span>
+                          </span>
+                          <span className="oorder__total">
+                            <small>Total</small>
+                            {formatPrice(o.total, o.currency_code)}
+                          </span>
+                          <span className="oorder__chev"><Chev size={13} /></span>
+                        </button>
+                        <div
+                          className="odetail"
+                          id={'detail-' + i}
+                          role="region"
+                          aria-label={'Order ' + displayId + ' details'}
+                          hidden={open !== i}
+                        >
+                          {open === i ? <OrderDetail o={o} /> : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="ac__noorders">
+                  <h3>No orders yet</h3>
+                  <p>When you place an order it appears here with its cash-on-delivery amount and courier details.</p>
+                  <Link className="btn btn--dark" href="/shop">Browse the shop</Link>
+                </div>
+              )}
             </section>
           </div>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }
