@@ -61,6 +61,7 @@
 .pill svg{flex:none}
 .pill--ok{background:#eef4ea;border:1px solid #cfe0c8;color:#2f5d34}
 .pill--wait{background:#fdf3e3;border:1px solid #f0dcb4;color:#8a5b12}
+.pill--cancel{background:#f3f3f2;border:1px solid #dcdcda;color:#6b6b68}
 
 /* orders overview */
 .oorder-list{display:grid;gap:0}

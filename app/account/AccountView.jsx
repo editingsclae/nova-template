@@ -18,6 +18,7 @@ import {
   formatPrice,
   cleanVariantTitle,
   countryName,
+  getDerivedOrderStatus,
 } from '@/lib/medusa';
 
 function dateOf(ts) {
@@ -33,13 +34,6 @@ function initialsOf(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '—';
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
-}
-
-function getDerivedStatus(order) {
-  if (order.status === 'canceled') return 'Canceled';
-  if (order.fulfillment_status === 'delivered') return 'Delivered';
-  if (order.fulfillment_status === 'shipped') return 'Shipped';
-  return 'Order placed';
 }
 
 const Tick = ({ size = 13 }) => (
@@ -118,7 +112,7 @@ function OrderDetail({ orderId, token }) {
   const items = Array.isArray(order.items) ? order.items : [];
   const currency = order.currency_code || 'tnd';
   const shipMethod = order.shipping_methods?.[0]?.name?.trim() || '';
-  const derivedStatus = getDerivedStatus(order);
+  const derivedStatus = getDerivedOrderStatus(order);
 
   const subtotal =
     order.item_subtotal ??
@@ -199,7 +193,7 @@ function OrderDetail({ orderId, token }) {
         <dl className="okv">
           <div>
             <dt>Payment</dt>
-            <dd>Cash on delivery</dd>
+            <dd>{derivedStatus === 'Canceled' ? 'Canceled' : 'Cash on delivery'}</dd>
           </div>
           <div>
             <dt>Status</dt>
@@ -659,7 +653,7 @@ export default function AccountView() {
                     const displayId = o.display_id ? String(o.display_id) : o.id;
                     const items = Array.isArray(o.items) ? o.items : [];
                     const itemCount = items.reduce((acc, it) => acc + (it.quantity || 1), 0);
-                    const derivedStatus = getDerivedStatus(o);
+                    const derivedStatus = getDerivedOrderStatus(o);
 
                     return (
                       <div className="oorder" key={o.id || displayId}>
@@ -675,7 +669,10 @@ export default function AccountView() {
                             {dateOf(o.created_at)} • {itemCount} {itemCount === 1 ? 'item' : 'items'}
                           </span>
                           <span className="oorder__status">
-                            <span className="pill pill--ok"><Tick />{derivedStatus}</span>
+                            <span className={derivedStatus === 'Canceled' ? 'pill pill--cancel' : 'pill pill--ok'}>
+                              {derivedStatus !== 'Canceled' && <Tick />}
+                              {derivedStatus}
+                            </span>
                           </span>
                           <span className="oorder__total">
                             <small>Total</small>

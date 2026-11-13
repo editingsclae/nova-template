@@ -7,7 +7,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { TickPlain } from '@/components/icons';
 import { useCart } from '@/lib/cart';
-import { getOrder, formatPrice, cleanVariantTitle, countryName } from '@/lib/medusa';
+import { getOrder, formatPrice, cleanVariantTitle, countryName, getDerivedOrderStatus } from '@/lib/medusa';
 
 function ConfirmedSkeleton() {
   const block = (w, h, extra = {}) => ({
@@ -145,10 +145,8 @@ function ConfirmedContent() {
   }
 
   // Derived status (Rule 16)
-  let statusText = 'Order placed';
-  if (order.fulfillment_status === 'shipped') statusText = 'Shipped';
-  if (order.fulfillment_status === 'delivered') statusText = 'Delivered';
-  if (order.status === 'canceled') statusText = 'Canceled';
+  const statusText = getDerivedOrderStatus(order);
+  const isCanceled = statusText === 'Canceled';
 
   const displayId = order.display_id ? String(order.display_id) : orderId;
   const addr = order.shipping_address || {};
@@ -159,12 +157,18 @@ function ConfirmedContent() {
       <div className="conf">
         <div className="conf__card">
           <div className="conf__tick"><TickPlain /></div>
-          <h1>Order placed</h1>
+          <h1>{isCanceled ? 'Order canceled' : 'Order placed'}</h1>
           <p className="conf__lede">
-            We’ve emailed a confirmation to <b>{order.email}</b>.
-            {addr.phone ? (
-              <> The courier will call <b>{addr.phone}</b> before arriving.</>
-            ) : null}
+            {isCanceled ? (
+              'This order was canceled.'
+            ) : (
+              <>
+                We've emailed a confirmation to <b>{order.email}</b>.
+                {addr.phone ? (
+                  <> The courier will call <b>{addr.phone}</b> before arriving.</>
+                ) : null}
+              </>
+            )}
           </p>
 
           <div className="conf__grid">
@@ -189,8 +193,10 @@ function ConfirmedContent() {
             <div>
               <p className="conf__k">Payment</p>
               <p className="conf__v">
-                Cash on delivery<br />
-                <b>{formatPrice(order.total, currency)}</b> due when the parcel arrives
+                {isCanceled ? 'No payment due' : (
+                  <>Cash on delivery<br />
+                  <b>{formatPrice(order.total, currency)}</b> due when the parcel arrives</>
+                )}
               </p>
             </div>
           </div>
