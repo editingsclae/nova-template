@@ -98,6 +98,10 @@ export default function ProductView({ product, rawProduct, related = [], searchP
     chosenVariant?.calculated_price?.calculated_amount ?? product.price;
   const currencyCode =
     chosenVariant?.calculated_price?.currency_code || product.currencyCode || 'TND';
+  // The normal price of the chosen variant, crossed out when a discount made it lower
+  const originalAmount = Number(chosenVariant?.calculated_price?.original_amount);
+  const wasAmount =
+    Number.isFinite(originalAmount) && originalAmount > priceAmount ? originalAmount : null;
 
   const sizeOption = options.find((o) => o.title.toLowerCase() === 'size');
   const selectedSizeVal = sizeOption ? selectedOptions[sizeOption.id] : null;
@@ -303,6 +307,9 @@ export default function ProductView({ product, rawProduct, related = [], searchP
 
           <div className="pdp__price">
             <b>{formatPrice(priceAmount, currencyCode)}</b>
+            {wasAmount !== null && (
+              <s className="pdp__was">{formatPrice(wasAmount, currencyCode)}</s>
+            )}
             <span>Cash on delivery across Tunisia</span>
           </div>
 
@@ -437,7 +444,7 @@ export default function ProductView({ product, rawProduct, related = [], searchP
                   <div className="prod__body">
                     <h4>{p.name}</h4>
                     {p.sub && <p className="prod__sub">{p.sub}</p>}
-                    <div className="prod__row"><span className="prod__price">{p.from ? 'From ' : ''}{formatPrice(p.price, p.currencyCode)}</span></div>
+                    <div className="prod__row"><span className="prod__price">{p.from ? 'From ' : ''}{formatPrice(p.price, p.currencyCode)}{p.originalPrice ? <s className="prod__was">{formatPrice(p.originalPrice, p.currencyCode)}</s> : null}</span></div>
                   </div>
                 </div>
               </Link>

@@ -66,6 +66,7 @@
 .pdp__price{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
 .pdp__price b{font-size:29px;font-weight:800;letter-spacing:-.03em;color:#191712;font-variant-numeric:tabular-nums}
 .pdp__price span{font-size:12px;color:var(--muted-2)}
+.pdp__was{font-size:16px;font-weight:500;color:var(--muted-2);text-decoration:line-through;font-variant-numeric:tabular-nums}
 
 .pdp__stock{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-top:14px}
 .pdp__stock .dot{width:8px;height:8px;border-radius:50%;background:#2f5d34;flex:none}

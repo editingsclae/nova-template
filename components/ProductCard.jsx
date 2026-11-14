@@ -14,6 +14,10 @@ export default function ProductCard({ p, variant }) {
   const href = productUrl(p.handle || p.id);
   const showFrom = Boolean(p.from);
   const priceDisplay = (showFrom ? 'From ' : '') + formatPrice(p.price, p.currencyCode);
+  // The normal price, crossed out, when a discount made the price lower
+  const was = p.originalPrice ? (
+    <s className="prod__was">{formatPrice(p.originalPrice, p.currencyCode)}</s>
+  ) : null;
 
   const cartButton = p.stock ? (
     p.singleVariantInStock ? (
@@ -38,7 +42,7 @@ export default function ProductCard({ p, variant }) {
           <div className="prod__info">
             <h4><Link className="prod__name" href={href}>{p.name}</Link></h4>
             {p.sub && <p className="prod__sub">{p.sub}</p>}
-            <p className="prod__price">{priceDisplay}</p>
+            <p className="prod__price">{priceDisplay}{was}</p>
           </div>
           {cartButton}
         </div>
@@ -56,7 +60,7 @@ export default function ProductCard({ p, variant }) {
         <h4><Link className="prod__name" href={href}>{p.name}</Link></h4>
         {p.sub && <p className="prod__sub">{p.sub}</p>}
         <div className="prod__row">
-          <span className="prod__price">{priceDisplay}</span>
+          <span className="prod__price">{priceDisplay}{was}</span>
           {cartButton}
         </div>
         <p className="prod__stock">
