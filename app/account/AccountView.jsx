@@ -217,6 +217,12 @@ function OrderDetail({ orderId, token }) {
             <span>Items:</span>
             <b>{formatPrice(subtotal, currency)}</b>
           </div>
+          {Number(order.discount_total) > 0 ? (
+            <div className="sumrow sumrow--discount">
+              <span>Discount:</span>
+              <b>-{formatPrice(order.discount_total, currency)}</b>
+            </div>
+          ) : null}
           {order.shipping_subtotal != null ? (
             <div className="sumrow">
               <span>Shipping:</span>

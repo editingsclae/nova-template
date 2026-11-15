@@ -221,6 +221,12 @@ function ConfirmedContent() {
                   </div>
                 );
               })}
+              {Number(order.discount_total) > 0 && (
+                <div className="sumrow sumrow--discount">
+                  <span>Discount</span>
+                  <b>-{formatPrice(order.discount_total, currency)}</b>
+                </div>
+              )}
               <div className="sumrow sumrow--total" style={{ borderTop: '1px solid var(--line)' }}>
                 <span>Total due on delivery</span>
                 <b className="conf__total">{formatPrice(order.total, currency)}</b>

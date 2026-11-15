@@ -20,8 +20,11 @@ import {
   updateCartLine,
   removeCartLine,
   addShippingMethod,
+  applyCartPromotion,
+  removeCartPromotion,
   cleanVariantTitle,
 } from './medusa';
+import { getDiscountTotal } from './coupon';
 
 export const CART_ID_KEY = 'medusa_cart_id';
 export const MAX_QTY = 10;
@@ -221,6 +224,29 @@ export function CartProvider({ children }) {
     [cart?.id]
   );
 
+  // Coupon codes: the backend decides if a code is valid and what it takes off
+  const applyCoupon = useCallback(async (code) => {
+    const activeCart = cartRef.current;
+    if (!activeCart?.id) throw new Error('No active cart');
+    const updated = await applyCartPromotion(activeCart.id, code);
+    if (updated) {
+      cartRef.current = updated;
+      setCart(updated);
+    }
+    return updated;
+  }, []);
+
+  const removeCoupon = useCallback(async (code) => {
+    const activeCart = cartRef.current;
+    if (!activeCart?.id) throw new Error('No active cart');
+    const updated = await removeCartPromotion(activeCart.id, code);
+    if (updated) {
+      cartRef.current = updated;
+      setCart(updated);
+    }
+    return updated;
+  }, []);
+
   // Clear entire cart
   const clear = useCallback(async () => {
     try {
@@ -285,6 +311,7 @@ export function CartProvider({ children }) {
 
     return {
       subtotal: itemSub,
+      discount: getDiscountTotal(cart),
       shipping,
       tax,
       total,
@@ -321,6 +348,8 @@ export function CartProvider({ children }) {
     setQty,
     remove,
     setShippingMethod,
+    applyCoupon,
+    removeCoupon,
     clear,
     refreshCart: loadCart,
     drawerOpen,

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import CouponBox from '@/components/CouponBox';
 import { Chev } from '@/components/icons';
 import { MAX_QTY, useCart } from '@/lib/cart';
 import { formatPrice, cleanVariantTitle } from '@/lib/medusa';
@@ -175,10 +176,17 @@ export default function CartView() {
             <aside className="cart__aside">
               <div className="sumcard">
                 <h2>Order summary</h2>
+                <CouponBox />
                 <div className="sumrow">
                   <span>Subtotal <em>({n} {n === 1 ? 'item' : 'items'})</em></span>
                   <b>{formatPrice(t.subtotal, curr)}</b>
                 </div>
+                {t.discount > 0 && (
+                  <div className="sumrow sumrow--discount">
+                    <span>Discount</span>
+                    <b>-{formatPrice(t.discount, curr)}</b>
+                  </div>
+                )}
                 <div className="sumrow">
                   <span>Delivery</span>
                   <span>Calculated at checkout</span>
@@ -189,7 +197,7 @@ export default function CartView() {
                 </div>
                 <div className="sumrow sumrow--total">
                   <span>Subtotal</span>
-                  <b>{formatPrice(t.subtotal, curr)}</b>
+                  <b>{formatPrice(t.subtotal - t.discount, curr)}</b>
                 </div>
                 <div className="sumcard__ship">
                   <Bag />

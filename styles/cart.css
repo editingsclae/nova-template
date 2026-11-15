@@ -295,3 +295,18 @@ html.drawer-open{overflow:hidden}
   .conf__grid{grid-template-columns:1fr;gap:18px}
   .drawer__cta{grid-template-columns:1fr}
 }
+
+/* Coupon box and discount line */
+.coupon{display:grid;gap:8px;margin:0 0 14px}
+.coupon__row{display:flex;gap:8px;align-items:stretch}
+.coupon__label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.coupon__input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;font:inherit;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.coupon__input::placeholder{text-transform:none;letter-spacing:0;color:#a8a199}
+.coupon__input:focus{outline:none;border-color:#1b1a18}
+.coupon__err{font-size:11.5px;color:#b3261e}
+.coupon__tags{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.coupon__tag{display:inline-flex;align-items:center;gap:6px;background:#eef6ee;color:#2d6a3a;border-radius:99px;padding:4px 6px 4px 12px;font-size:11.5px;font-weight:600;letter-spacing:.06em}
+.coupon__x{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer}
+.coupon__x:hover{background:#dcecdc}
+.coupon__x:disabled{opacity:.5;cursor:default}
+.sumrow--discount b{color:#2d6a3a}

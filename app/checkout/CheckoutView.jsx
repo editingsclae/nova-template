@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import CouponBox from '@/components/CouponBox';
 import { Chev, TickPlain, Warn } from '@/components/icons';
 import { useCart } from '@/lib/cart';
 import {
@@ -732,11 +733,18 @@ export default function CheckoutView() {
                   </div>
                 ))}
               </div>
+              <CouponBox />
               <div>
                 <div className="sumrow">
                   <span>Subtotal <em>({n} {n === 1 ? 'item' : 'items'})</em></span>
                   <b>{formatPrice(t.subtotal, t.currencyCode)}</b>
                 </div>
+                {t.discount > 0 && (
+                  <div className="sumrow sumrow--discount">
+                    <span>Discount</span>
+                    <b>-{formatPrice(t.discount, t.currencyCode)}</b>
+                  </div>
+                )}
                 <div className="sumrow">
                   <span>Delivery</span>
                   <b>{t.shipping === 0 ? 'Free' : formatPrice(t.shipping, t.currencyCode)}</b>
