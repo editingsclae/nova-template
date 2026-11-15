@@ -22,6 +22,7 @@ import {
   addShippingMethod,
   applyCartPromotion,
   removeCartPromotion,
+  setCartCustomer,
   cleanVariantTitle,
 } from './medusa';
 import { getDiscountTotal } from './coupon';
@@ -228,6 +229,14 @@ export function CartProvider({ children }) {
   const applyCoupon = useCallback(async (code) => {
     const activeCart = cartRef.current;
     if (!activeCart?.id) throw new Error('No active cart');
+    // A signed-in shopper's cart must belong to them, for coupons limited per customer
+    if (!activeCart.customer_id) {
+      let token = null;
+      try { token = localStorage.getItem('medusa_token'); } catch (e) { /* private mode */ }
+      if (token) {
+        try { await setCartCustomer(activeCart.id, token); } catch (e) { /* the code is still tried */ }
+      }
+    }
     const updated = await applyCartPromotion(activeCart.id, code);
     if (updated) {
       cartRef.current = updated;
