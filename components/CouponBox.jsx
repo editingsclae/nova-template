@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from '@/components/icons';
 import { useCart } from '@/lib/cart';
 import {
@@ -12,12 +12,21 @@ import {
 /* The box where a shopper types a coupon code, with the codes already applied below it.
    Used in the cart and at checkout. */
 export default function CouponBox() {
-  const { cart, applyCoupon, removeCoupon } = useCart();
+  const { cart, applyCoupon, removeCoupon, couponMessage, setCouponMessage } = useCart();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
+  const boxRef = useRef(null);
   const applied = getAppliedCoupons(cart);
+  const shownError = error || couponMessage;
+
+  // A message about the coupon must not stay out of sight
+  useEffect(() => {
+    if (shownError && boxRef.current && boxRef.current.scrollIntoView) {
+      boxRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [shownError]);
   const canApply = !busy && normalizeCouponInput(code).length > 0;
 
   const apply = async () => {
@@ -32,6 +41,7 @@ export default function CouponBox() {
     }
     setBusy(true);
     setError(null);
+    setCouponMessage(null);
     try {
       const updated = await applyCoupon(clean);
       // A code the backend did not keep is not valid for this store
@@ -50,6 +60,7 @@ export default function CouponBox() {
   const remove = async (appliedCode) => {
     setBusy(true);
     setError(null);
+    setCouponMessage(null);
     try {
       await removeCoupon(appliedCode);
     } catch (err) {
@@ -60,7 +71,7 @@ export default function CouponBox() {
   };
 
   return (
-    <div className="coupon">
+    <div className="coupon" ref={boxRef}>
       <form
         className="coupon__row"
         onSubmit={(e) => {
@@ -84,8 +95,8 @@ export default function CouponBox() {
         </button>
       </form>
 
-      {error ? (
-        <p className="coupon__err" role="alert">{error}</p>
+      {shownError ? (
+        <p className="coupon__err" role="alert">{shownError}</p>
       ) : null}
 
       {applied.length > 0 ? (

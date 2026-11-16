@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import CouponBox from '@/components/CouponBox';
+import { isCouponProblem } from '@/lib/coupon';
 import { Chev, TickPlain, Warn } from '@/components/icons';
 import { useCart } from '@/lib/cart';
 import {
@@ -53,7 +54,7 @@ const Err = ({ msg }) => (msg ? <p className="err"><Warn /><span>{msg}</span></p
 
 export default function CheckoutView() {
   const router = useRouter();
-  const { cart, cartId, ready, lines, count, totals, setShippingMethod } = useCart();
+  const { cart, cartId, ready, lines, count, totals, setShippingMethod, setCouponMessage } = useCart();
   const [f, setF] = useState(EMPTY);
   const [errs, setErrs] = useState({});
   const [bar, setBar] = useState(null);
@@ -276,6 +277,7 @@ export default function CheckoutView() {
     }
 
     setBusy(true);
+    setCouponMessage(null);
 
     try {
       // Rule 13: if customer token exists and cart has no customer_id, link it before completion
@@ -342,7 +344,13 @@ export default function CheckoutView() {
       console.error('[checkout] Order submission error:', err);
       const msg =
         err?.data?.message || err?.message || 'Could not place order. Please try again.';
-      setBar({ kind: 'err', html: msg });
+      if (isCouponProblem(msg)) {
+        // About the coupon: shown under the coupon box, where the shopper can fix it
+        setBar(null);
+        setCouponMessage(msg);
+      } else {
+        setBar({ kind: 'err', html: msg });
+      }
       setBusy(false);
     }
   };

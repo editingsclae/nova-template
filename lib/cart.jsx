@@ -34,6 +34,8 @@ const CartCtx = createContext(null);
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState(null);
+  // A coupon problem found when the order is placed, shown under the coupon box
+  const [couponMessage, setCouponMessage] = useState(null);
   const [ready, setReady] = useState(false);
   const [adding, setAdding] = useState(false);
   const [removingLines, setRemovingLines] = useState({});
@@ -225,6 +227,11 @@ export function CartProvider({ children }) {
     [cart?.id]
   );
 
+  // The message is about the cart as it was: drop it when the cart's money changes
+  useEffect(() => {
+    setCouponMessage(null);
+  }, [cart?.item_subtotal, cart?.discount_total]);
+
   // Coupon codes: the backend decides if a code is valid and what it takes off
   const applyCoupon = useCallback(async (code) => {
     const activeCart = cartRef.current;
@@ -359,6 +366,8 @@ export function CartProvider({ children }) {
     setShippingMethod,
     applyCoupon,
     removeCoupon,
+    couponMessage,
+    setCouponMessage,
     clear,
     refreshCart: loadCart,
     drawerOpen,
