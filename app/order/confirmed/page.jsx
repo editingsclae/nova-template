@@ -7,6 +7,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { TickPlain } from '@/components/icons';
 import { useCart } from '@/lib/cart';
+import { useOrderTracking } from '@/lib/use-order-tracking';
 import { getOrder, formatPrice, cleanVariantTitle, countryName, getDerivedOrderStatus } from '@/lib/medusa';
 
 function ConfirmedSkeleton() {
@@ -124,6 +125,8 @@ function ConfirmedContent() {
       });
   }, [orderId, clear, closeDrawer]);
 
+  const trackingNumbers = useOrderTracking(order);
+
   if (loading) {
     return <ConfirmedSkeleton />;
   }
@@ -179,6 +182,12 @@ function ConfirmedContent() {
             <div>
               <p className="conf__k">Status</p>
               <p className="conf__v">{statusText}</p>
+              {trackingNumbers.length > 0 ? (
+                <p className="conf__v">
+                  {trackingNumbers.length > 1 ? 'Tracking numbers' : 'Tracking number'}:{' '}
+                  <b>{trackingNumbers.join(', ')}</b>
+                </p>
+              ) : null}
             </div>
             <div>
               <p className="conf__k">Ship to</p>

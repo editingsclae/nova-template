@@ -7,6 +7,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { Chev } from '@/components/icons';
 import { useCart } from '@/lib/cart';
+import { useOrderTracking } from '@/lib/use-order-tracking';
 import {
   getCustomer,
   getCustomerOrders,
@@ -84,6 +85,8 @@ function OrderDetail({ orderId, token }) {
       load();
     }
   }, [orderId, token]);
+
+  const trackingNumbers = useOrderTracking(order);
 
   if (loading) {
     return (
@@ -199,6 +202,12 @@ function OrderDetail({ orderId, token }) {
             <dt>Status</dt>
             <dd>{derivedStatus}</dd>
           </div>
+          {trackingNumbers.length > 0 ? (
+            <div>
+              <dt>{trackingNumbers.length > 1 ? 'Tracking numbers' : 'Tracking number'}</dt>
+              <dd>{trackingNumbers.join(', ')}</dd>
+            </div>
+          ) : null}
           {order.email ? (
             <div>
               <dt>Contact</dt>
